@@ -123,3 +123,42 @@ data_mngt_quanti_per_site = data_mngt_reduced |>
 potential_sites_of_sampling = potential_sites_of_sampling |> 
   left_join(data_mngt_quanti_per_site, by = "session_id", )
 
+##### 3.2 Indices for each species #####
+
+sd_weighted <- function(x, w, na.rm = TRUE) {
+  if (na.rm) {
+    valide <- !(is.na(x) | is.na(w))
+    if (sum(valide) < 2) return(NA_real_)
+    x <- x[valide]
+    w <- w[valide]
+  }
+  
+  mu <- sum(w * x) / sum(w) # weighted mean
+  sqrt(sum(w * (x - mu)^2) / (sum(w) - 1))
+}
+
+# Compute management indice of each species weighted by its abundance
+data_spe_session_mngt = data_spe_session |> 
+  left_join(data_mngt_reduced |>  # Add gestion intensity for each session
+              dplyr::select(-site_id,-year), by = "session_id")
+
+spe_management_indices =  data_spe_session_mngt|> 
+  group_by(spe_id,spe_name) |> 
+    summarise(
+      weighted_mean_mngt_intensity = round(sum(gestion_classe_num * AB, na.rm = T) / sum(AB),2),
+      weighted_sd_mngt_intensity = round(sd_weighted(x = gestion_classe_num, w = AB, na.rm = T),3),
+      mean_mngt_intensity = round(mean(gestion_classe_num, na.rm = T),2),
+      sd_mngt_intensity = round(sd(gestion_classe_num, na.rm = T),3),
+      min_mngt_intensity = min(gestion_classe_num, na.rm = T),
+      max_mngt_intensity = max(gestion_classe_num, na.rm = T),
+      tot_session = n_distinct(session_id),
+      tot_site = n_distinct(site_id),
+      tot_ab = sum(AB),
+      tot_mngt_class = n_distinct(gestion_classe_num)) |> 
+    ungroup()
+
+
+
+list_selected_species |> 
+  left_join(spe_management_indices |> select(-spe_name), by = "spe_id") |> View()
+
