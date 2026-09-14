@@ -7,21 +7,46 @@ data_traits = read_excel(here("data/TraitsBDD2020_2025.xlsx")) # trait for each 
 data_cwm = read_excel(here("data/CWM2020_2025.xlsx")) # community weighted mean per session
 data_quanti = read_excel(here("data/Quanti2020_2025.xlsx")) # quantitative indices per session
 
+data_sqr = data_sqr |> 
+  rename(site_id = SITE,
+         month = MOIS,
+         day = JOUR,
+         year = ANNEE,
+         spe_name = LB_NOM,
+         spe_id = CD_REF_18,
+         rank = RANG,
+         phenology = Phenology,
+         square = Square)
+
+data_traits = data_traits |> 
+  rename(spe_name = Species,
+         urbanity_class = Urbanity_class,
+         reward = Reward)
+
+data_quanti = data_quanti |> 
+  rename(site_id = Site,
+         year = Year)
+
+data_cwm = data_cwm |> 
+  rename(year = site_year)
 
 #### 1. Data management #### 
 data_spe_session = data_sqr |> # Dataframe of abundance for each species in each session
-  group_by(SITE,ANNEE,CD_REF_18,LB_NOM) |> 
+  group_by(site_id,year,spe_id,spe_name) |> 
   summarise(AB = n()) |> 
   ungroup()
 
 data_spe_distribution = data_spe_session |> # Dataframe of abundance of species across all sites for each year
-  group_by(CD_REF_18,LB_NOM,ANNEE) |> 
-  summarise(Freq_site = n(),
+  group_by(spe_id,spe_name,year) |> 
+  summarise(freq_site = n(),
             AB_Tot = sum(AB)) |> 
   ungroup()
 
 most_frequent_species = data_spe_distribution |> # Keep only more frequent species across sites
-  filter(Freq_site >= 10)
+  filter(freq_site >= 10)
 
 september_fruiting_spe = data_traits |>  # Defines species that should be fruiting in september
   filter(flw_late>=8)
+
+list_selected_species = most_frequent_species |> 
+  filter(spe_name %in% september_fruiting_spe$spe_name)
