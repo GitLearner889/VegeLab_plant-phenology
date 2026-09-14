@@ -36,7 +36,7 @@ data_cwm = data_cwm |>
   mutate(session_id = paste(site_id,year, sep = "_")) |> 
   relocate(session_id)
 
-#### 1. Data management #### 
+#### 1. Data species #### 
 data_spe_session = data_sqr |> # Dataframe of abundance for each species in each session
   group_by(session_id,site_id,year,spe_id,spe_name) |> 
   summarise(AB = n()) |> 
@@ -157,6 +157,49 @@ spe_management_indices =  data_spe_session_mngt|>
       tot_mngt_class = n_distinct(gestion_classe_num)) |> 
     ungroup()
 
+## Graphs 
+
+hist(spe_management_indices$mean_mngt_intensity)
+hist(spe_management_indices$weighted_mean_mngt_intensity)
+
+
+# Sélectionner quelques espèces d'intérêt (ex : les plus abondantes)
+species_of_intrest <- spe_management_indices %>%
+  slice_max(tot_ab, n = 12) %>%
+  pull(spe_name)
+
+species_of_intrest <- list_selected_species %>%
+ filter(fruiting) %>%
+  pull(spe_name) 
+
+# Distribution of intensity of gestion per species
+ggplot(data = filter(data_spe_session_mngt, spe_name %in% species_of_intrest),
+       aes(x = gestion_classe_num)) +
+  geom_histogram(binwidth = 1, fill = "#6d4aff", color = "white") +
+  facet_wrap(~ spe_name, scales = "free_y") +
+  labs(x = "Intensité de gestion (classe)",y = "Nombre d'observations", title = "Distribution des intensités de gestion par espèce") +
+  theme_minimal()
+# Distribution of intensity of gestion per species weighted by their abundance
+ggplot(data = filter(data_spe_session_mngt, spe_name %in% species_of_intrest),
+       aes(x = gestion_classe_num, weight = AB)) +
+  geom_histogram(binwidth = 1, fill = "#118911", color = "white") +
+  facet_wrap(~ spe_name, scales = "free_y") +
+  labs(x = "Intensité de gestion (classe)", y = "Abondance cumulée", title = "Distribution pondérée des intensités de gestion par espèce") +
+  theme_minimal()
+
+# 
+ggplot(spe_management_indices, aes(x = weighted_mean_mngt_intensity, y = weighted_sd_mngt_intensity)) +
+    geom_point(aes(size = tot_ab, color = tot_mngt_class),
+             alpha = 0.6) +
+  scale_size_continuous(range = c(1, 8), name = "Abondance totale") +
+  scale_color_viridis_c(name = "Nb classes de gestion") +
+  labs(
+    x = "Intensité de gestion moyenne pondérée",
+    y = "Écart-type pondéré",
+    title = "Positionnement des espèces le long du gradient de gestion",
+    subtitle = "Espèces en haut : fréquentent des gestions variées"
+  ) +
+  theme_minimal()
 
 
 list_selected_species |> 
