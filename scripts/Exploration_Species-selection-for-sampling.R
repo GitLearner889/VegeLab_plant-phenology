@@ -59,9 +59,9 @@ september_fruiting_spe = data_traits |>  # Defines species that should be fruiti
 
 list_selected_species = most_frequent_species |> 
   # filter(spe_name %in% september_fruiting_spe$spe_name) |> 
-  left_join(data_traits |> 
+  left_join(data_traits |> # Add information on time of end flowering
               dplyr::select(spe_name,flw_late), by = "spe_name" )|> 
-  mutate(fruiting = ifelse(flw_late >=8,T,F)) |> 
+  mutate(fruiting = ifelse(flw_late >=8 & flw_late < 10, T, F)) |> 
   group_by(spe_id,spe_name, fruiting, flw_late) |> 
   summarise(mean_freq = round(mean(freq_site)),
             max_freq = max(freq_site),
@@ -97,10 +97,9 @@ data_spe_distribution_2025 = temp_data |> # Dataframe of abundance of species ac
   ungroup() |> 
   filter(year == 2025) |> # Keep only most frequent species across sites
   filter(freq_site >= 10) |> # Keep only most frequent species across sites
-  mutate(fruiting = case_when(
-    spe_name %in% september_fruiting_spe$spe_name ~ T,
-    T ~ F
-  )) 
+  left_join(data_traits |> # Add information on end of flowering periode
+              dplyr::select(spe_name,flw_late), by = "spe_name") |> 
+  mutate(fruiting = ifelse(flw_late >=8 & flw_late < 10, T, F)) 
 
 #### 3. Management data ####
 # Retrieve management data 
@@ -125,7 +124,7 @@ data_mngt_quanti_per_site = data_mngt_reduced |>
 
 # Add managemeny infos of potential sites
 potential_sites_of_sampling = potential_sites_of_sampling |> 
-  left_join(data_mngt_quanti_per_site, by = "session_id", )
+  left_join(data_mngt_quanti_per_site, by = "site_id", )
 
 ##### 3.2 Indices for each species #####
 
@@ -161,7 +160,7 @@ spe_management_indices =  data_spe_session_mngt|>
       tot_mngt_class = n_distinct(gestion_classe_num)) |> 
     ungroup()
 
-## Graphs 
+##### 3.3 Graphs #####
 
 hist(spe_management_indices$mean_mngt_intensity)
 hist(spe_management_indices$weighted_mean_mngt_intensity)
@@ -176,6 +175,10 @@ species_of_intrest <- list_selected_species %>%
  filter(fruiting) %>%
   pull(spe_name) 
 
+species_of_intrest <- data_spe_distribution_2025 %>%
+  filter(freq_site > 14) %>%
+  pull(spe_name) 
+
 # Distribution of intensity of gestion per species
 ggplot(data = filter(data_spe_session_mngt, spe_name %in% species_of_intrest),
        aes(x = gestion_classe_num)) +
@@ -183,6 +186,7 @@ ggplot(data = filter(data_spe_session_mngt, spe_name %in% species_of_intrest),
   facet_wrap(~ spe_name, scales = "free_y") +
   labs(x = "Intensité de gestion (classe)",y = "Nombre d'observations", title = "Distribution des intensités de gestion par espèce") +
   theme_minimal()
+
 # Distribution of intensity of gestion per species weighted by their abundance
 ggplot(data = filter(data_spe_session_mngt, spe_name %in% species_of_intrest),
        aes(x = gestion_classe_num, weight = AB)) +
@@ -208,4 +212,7 @@ ggplot(spe_management_indices, aes(x = weighted_mean_mngt_intensity, y = weighte
 
 list_selected_species |> 
   left_join(spe_management_indices |> select(-spe_name), by = "spe_id") |> View()
+
+
+#### 4. Temperature adat ####
 
