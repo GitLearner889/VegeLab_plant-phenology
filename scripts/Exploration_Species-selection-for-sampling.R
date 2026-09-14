@@ -160,6 +160,11 @@ spe_management_indices =  data_spe_session_mngt|>
       tot_mngt_class = n_distinct(gestion_classe_num)) |> 
     ungroup()
 
+# Create a dataframe with important variable to choose species
+
+data_selection = data_spe_distribution_2025 |>
+  left_join(spe_management_indices |> select(spe_name, weighted_mean_mngt_intensity, weighted_sd_mngt_intensity), by = "spe_name") 
+  
 ##### 3.3 Graphs #####
 
 hist(spe_management_indices$mean_mngt_intensity)
@@ -214,5 +219,6 @@ list_selected_species |>
   left_join(spe_management_indices |> select(-spe_name), by = "spe_id") |> View()
 
 
-#### 4. Temperature adat ####
+#### 4. Temperature data ####
+
 
