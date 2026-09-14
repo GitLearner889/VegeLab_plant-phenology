@@ -16,7 +16,9 @@ data_sqr = data_sqr |>
          spe_id = CD_REF_18,
          rank = RANG,
          phenology = Phenology,
-         square = Square) 
+         square = Square) |> 
+  mutate(session_id = paste(site_id,year, sep = "_")) |> 
+  relocate(session_id)
 
 data_traits = data_traits |> 
   rename(spe_name = Species,
@@ -25,14 +27,18 @@ data_traits = data_traits |>
 
 data_quanti = data_quanti |> 
   rename(site_id = Site,
-         year = Year)
+         year = Year) |> 
+  mutate(session_id = paste(site_id,year, sep = "_")) |> 
+  relocate(session_id)
 
 data_cwm = data_cwm |> 
-  rename(year = site_year)
+  rename(year = site_year) |> 
+  mutate(session_id = paste(site_id,year, sep = "_")) |> 
+  relocate(session_id)
 
 #### 1. Data management #### 
 data_spe_session = data_sqr |> # Dataframe of abundance for each species in each session
-  group_by(site_id,year,spe_id,spe_name) |> 
+  group_by(session_id,site_id,year,spe_id,spe_name) |> 
   summarise(AB = n()) |> 
   ungroup()
 
@@ -101,7 +107,7 @@ data_mngt_reduced =  data_management |>
   filter(as.numeric(year) <= 2025) |> # to be coherent with plant data
   mutate(gestion_classe_fct = as.factor(gestion_classe)) |> 
   mutate(gestion_classe_num = as.numeric(gestion_classe_fct)) |> 
-  dplyr::select(site_id, year, gestion, gestion_classe_num)
+  dplyr::select(session_id,site_id, year, gestion, gestion_classe_num)
 
 ##### 3.1 Indices for each- sites ##### 
 # Quantitative indices about management
@@ -115,5 +121,5 @@ data_mngt_quanti_per_site = data_mngt_reduced |>
 
 # Add managemeny infos of potential sites
 potential_sites_of_sampling = potential_sites_of_sampling |> 
-  left_join(data_mngt_quanti_per_site, by = "site_id")
+  left_join(data_mngt_quanti_per_site, by = "session_id", )
 
