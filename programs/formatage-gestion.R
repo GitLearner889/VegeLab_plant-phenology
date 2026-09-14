@@ -1,13 +1,12 @@
 source(here::here("programs","libraries.R"))
 
-#### Recuperation des donnees ####
-# Recuperation des donnees
-sheets = excel_sheets(here("data/data_gestion/data-gestion_2026-04-30.xlsx"))
-df_gestion_raw = read_excel(here("data/data_gestion/data-gestion_2026-04-30.xlsx"), sheets[1])
+#### Data retrieval ####
+sheets = excel_sheets(here("data/data_management/gestion_2026-09-14.xlsx"))
+df_management_raw = read_excel(here("data/data_management/gestion_2026-09-14.xlsx"), sheets[1])
 
 ##### 2.2 Variables de gestion #####
 
-df_gestion = df_gestion_raw %>% 
+df_management = df_management_raw %>% 
   rename(fauche_type = `Type de fauche majoritaire`,
          fauche_periode = `période de fauche`,
          fauche_nombre = `Nombre max de fauches par an`,
@@ -52,7 +51,7 @@ df_gestion = df_gestion_raw %>%
     relocate(site_id,year,fauche_type,fauche_nombre,fauche_periode,fauche_residus,outils,perturbations)
 
 # Calcul des intensites de gestion
-df_gestion = df_gestion %>% 
+df_management = df_management %>% 
   mutate(session_id = paste(site_id,year, sep = "_"),
          fauche_residus = as.factor(fauche_residus),
          fauche_periode = as.factor(fauche_periode),
