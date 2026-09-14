@@ -6,7 +6,7 @@ data_sqr = read_excel(here("data/Square2020_2025.xlsx")) # quadrat distribution
 data_traits = read_excel(here("data/TraitsBDD2020_2025.xlsx")) # trait for each species
 data_cwm = read_excel(here("data/CWM2020_2025.xlsx")) # community weighted mean per session
 data_quanti = read_excel(here("data/Quanti2020_2025.xlsx")) # quantitative indices per session
-
+# Rename dataframes variables
 data_sqr = data_sqr |> 
   rename(site_id = SITE,
          month = MOIS,
@@ -60,3 +60,11 @@ list_selected_species = most_frequent_species |>
             mean_ab = round(mean(AB_Tot)),
             max_ab = max(AB_Tot)) |> 
   ungroup()
+
+
+#### 2. Species and site selection  ####
+# Sites that should be explored in late september
+potential_sites_of_sampling = data.frame(site_id = c(74, 27, 75, 23, 92, 58, 96, 55, 45, 72)) |> 
+  arrange(site_id)
+
+
