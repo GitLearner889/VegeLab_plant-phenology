@@ -42,7 +42,7 @@ data_spe_distribution = data_spe_session |> # Dataframe of abundance of species 
             AB_Tot = sum(AB)) |> 
   ungroup()
 
-most_frequent_species = data_spe_distribution |> # Keep only more frequent species across sites
+most_frequent_species = data_spe_distribution |> # Keep only most frequent species across sites
   filter(freq_site >= 10)
 
 september_fruiting_spe = data_traits |>  # Defines species that should be fruiting in september
@@ -67,4 +67,31 @@ list_selected_species = most_frequent_species |>
 potential_sites_of_sampling = data.frame(site_id = c(74, 27, 75, 23, 92, 58, 96, 55, 45, 72)) |> 
   arrange(site_id)
 
+# Count for each year the number of time the species is present in one of the 10 potential sites
+temp_data = data_spe_session |> 
+  mutate(potential_site = case_when(
+    site_id %in% potential_sites_of_sampling$site_id ~ 1,
+    T ~ 0
+  )) |> 
+  group_by(spe_id,year) |> 
+  mutate(nb_present_potentiel_site = sum(potential_site)) |> 
+  ungroup()
 
+# Verification
+if(F){
+  temp_data |> distinct(year, spe_name, nb_present_potentiel_site) |> nrow() ==  temp_data |> distinct(year, spe_name) |> nrow()}
+
+
+data_spe_distribution_2025 = data_spe_distribution |> 
+  filter(year == 2025) |> # Keep only most frequent species across sites
+  filter(freq_site >= 10) |> # Keep only most frequent species across sites
+  mutate(fruiting = case_when(
+    spe_name %in% september_fruiting_spe$spe_name ~ T,
+    T ~ F
+  )) |> 
+  mutate()
+
+
+#### Management data ####
+data_management
+  
