@@ -16,7 +16,7 @@ data_sqr = data_sqr |>
          spe_id = CD_REF_18,
          rank = RANG,
          phenology = Phenology,
-         square = Square)
+         square = Square) 
 
 data_traits = data_traits |> 
   rename(spe_name = Species,
@@ -92,15 +92,20 @@ data_spe_distribution_2025 = data_spe_distribution |>
   mutate()
 
 
-#### Management data ####
+#### 3. Management data ####
 # Retrieve management data 
 source(here("programs/formatage-gestion.R"))
 
-# Quantitative indices about management
-data_mngt_quanti_per_site = data_management |> 
+# Reduce dataframe to needed values
+data_mngt_reduced =  data_management |> 
   filter(as.numeric(year) <= 2025) |> # to be coherent with plant data
   mutate(gestion_classe_fct = as.factor(gestion_classe)) |> 
   mutate(gestion_classe_num = as.numeric(gestion_classe_fct)) |> 
+  dplyr::select(site_id, year, gestion, gestion_classe_num)
+
+##### 3.1 Indices for each- sites ##### 
+# Quantitative indices about management
+data_mngt_quanti_per_site = data_mngt_reduced |> 
   group_by(site_id) |> 
   summarise(mean_mngt_class = round(mean(gestion_classe_num, na.rm = T),2),
             sd_mngt_class = round(sd(gestion_classe_num, na.rm = T),3),
@@ -111,6 +116,4 @@ data_mngt_quanti_per_site = data_management |>
 # Add managemeny infos of potential sites
 potential_sites_of_sampling = potential_sites_of_sampling |> 
   left_join(data_mngt_quanti_per_site, by = "site_id")
-
-
 
