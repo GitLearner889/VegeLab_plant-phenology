@@ -55,7 +55,7 @@ most_frequent_species = data_spe_distribution |> # Keep only most frequent speci
   filter(freq_site >= 10)
 
 september_fruiting_spe = data_traits |>  # Defines species that should be fruiting in september
-  filter(flw_late>=8 & flw_late != "NA")
+  filter(flw_late>=8 & flw_late != "NA" & flw_late<10 )
 
 list_selected_species = most_frequent_species |> 
   # filter(spe_name %in% september_fruiting_spe$spe_name) |> 
@@ -69,9 +69,6 @@ list_selected_species = most_frequent_species |>
             max_ab = max(AB_Tot)) |> 
   ungroup()
 
-
-list_selected_species_2025 = list_selected_species |> 
-  filter(year == 2025) 
 
 #### 2. Species and site selection  ####
 # Sites that should be explored in late september
