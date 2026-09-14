@@ -2,10 +2,10 @@ source(here::here("programs/libraries.R"))
 
 #### 0. Data importation ####
 # Import plant data
-data_sqr = read_excel(here("data/Square2020_2025.xlsx")) # quadrat distribution
-data_traits = read_excel(here("data/TraitsBDD2020_2025.xlsx")) # trait for each species
-data_cwm = read_excel(here("data/CWM2020_2025.xlsx")) # community weighted mean per session
-data_quanti = read_excel(here("data/Quanti2020_2025.xlsx")) # quantitative indices per session
+data_sqr = read_excel(here("data/data_plant/Square2020_2025.xlsx")) # quadrat distribution
+data_traits = read_excel(here("data/data_plant/TraitsBDD2020_2025.xlsx")) # trait for each species
+data_cwm = read_excel(here("data/data_plant/CWM2020_2025.xlsx")) # community weighted mean per session
+data_quanti = read_excel(here("data/data_plant/Quanti2020_2025.xlsx")) # quantitative indices per session
 # Rename dataframes variables
 data_sqr = data_sqr |> 
   rename(site_id = SITE,
@@ -93,5 +93,24 @@ data_spe_distribution_2025 = data_spe_distribution |>
 
 
 #### Management data ####
-data_management
-  
+# Retrieve management data 
+source(here("programs/formatage-gestion.R"))
+
+# Quantitative indices about management
+data_mngt_quanti_per_site = data_management |> 
+  filter(as.numeric(year) <= 2025) |> # to be coherent with plant data
+  mutate(gestion_classe_fct = as.factor(gestion_classe)) |> 
+  mutate(gestion_classe_num = as.numeric(gestion_classe_fct)) |> 
+  group_by(site_id) |> 
+  summarise(mean_mngt_class = round(mean(gestion_classe_num, na.rm = T),2),
+            sd_mngt_class = round(sd(gestion_classe_num, na.rm = T),3),
+            min_mngt_class = min(gestion_classe_num, na.rm = T),
+            max_mngt_class = max(gestion_classe_num, na.rm = T),
+            nb_session = n())
+
+# Add managemeny infos of potential sites
+potential_sites_of_sampling = potential_sites_of_sampling |> 
+  left_join(data_mngt_quanti_per_site, by = "site_id")
+
+
+
