@@ -75,3 +75,6 @@ df_management = df_management %>%
   ) %>% 
   relocate(session_id) 
 
+# New name
+data_management = df_management
+rm(df_management_raw, df_management)
