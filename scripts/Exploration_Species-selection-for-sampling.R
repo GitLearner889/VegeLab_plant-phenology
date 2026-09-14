@@ -23,7 +23,10 @@ data_sqr = data_sqr |>
 data_traits = data_traits |> 
   rename(spe_name = Species,
          urbanity_class = Urbanity_class,
-         reward = Reward)
+         reward = Reward) |> 
+  mutate(flw_early = ifelse(is.na(flw_early), NA,as.numeric(flw_early)),
+         flw_late = ifelse(is.na(flw_late), NA,as.numeric(flw_late)),
+         flw_long = ifelse(is.na(flw_long), NA,as.numeric(flw_long)))
 
 data_quanti = data_quanti |> 
   rename(site_id = Site,
@@ -56,17 +59,19 @@ september_fruiting_spe = data_traits |>  # Defines species that should be fruiti
 
 list_selected_species = most_frequent_species |> 
   # filter(spe_name %in% september_fruiting_spe$spe_name) |> 
-  mutate(fruiting = case_when(
-    spe_name %in% september_fruiting_spe$spe_name ~ T,
-    T ~ F
-  )) |> 
-  group_by(spe_id,spe_name, fruiting) |> 
+  left_join(data_traits |> 
+              dplyr::select(spe_name,flw_late), by = "spe_name" )|> 
+  mutate(fruiting = ifelse(flw_late >=8,T,F)) |> 
+  group_by(spe_id,spe_name, fruiting, flw_late) |> 
   summarise(mean_freq = round(mean(freq_site)),
             max_freq = max(freq_site),
             mean_ab = round(mean(AB_Tot)),
             max_ab = max(AB_Tot)) |> 
   ungroup()
 
+
+list_selected_species_2025 = list_selected_species |> 
+  filter(year == 2025) 
 
 #### 2. Species and site selection  ####
 # Sites that should be explored in late september
@@ -88,15 +93,17 @@ if(F){
   temp_data |> distinct(year, spe_name, nb_present_potentiel_site) |> nrow() ==  temp_data |> distinct(year, spe_name) |> nrow()}
 
 
-data_spe_distribution_2025 = data_spe_distribution |> 
+data_spe_distribution_2025 = temp_data |> # Dataframe of abundance of species across all sites for each year
+  group_by(spe_id,spe_name,year,nb_present_potentiel_site) |> 
+  summarise(freq_site = n(),
+            AB_Tot = sum(AB)) |> 
+  ungroup() |> 
   filter(year == 2025) |> # Keep only most frequent species across sites
   filter(freq_site >= 10) |> # Keep only most frequent species across sites
   mutate(fruiting = case_when(
     spe_name %in% september_fruiting_spe$spe_name ~ T,
     T ~ F
-  )) |> 
-  mutate()
-
+  )) 
 
 #### 3. Management data ####
 # Retrieve management data 
