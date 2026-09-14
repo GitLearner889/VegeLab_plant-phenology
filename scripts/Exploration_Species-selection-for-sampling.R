@@ -46,7 +46,17 @@ most_frequent_species = data_spe_distribution |> # Keep only more frequent speci
   filter(freq_site >= 10)
 
 september_fruiting_spe = data_traits |>  # Defines species that should be fruiting in september
-  filter(flw_late>=8)
+  filter(flw_late>=8 & flw_late != "NA")
 
 list_selected_species = most_frequent_species |> 
-  filter(spe_name %in% september_fruiting_spe$spe_name)
+  # filter(spe_name %in% september_fruiting_spe$spe_name) |> 
+  mutate(fruiting = case_when(
+    spe_name %in% september_fruiting_spe$spe_name ~ T,
+    T ~ F
+  )) |> 
+  group_by(spe_id,spe_name, fruiting) |> 
+  summarise(mean_freq = round(mean(freq_site)),
+            max_freq = max(freq_site),
+            mean_ab = round(mean(AB_Tot)),
+            max_ab = max(AB_Tot)) |> 
+  ungroup()
