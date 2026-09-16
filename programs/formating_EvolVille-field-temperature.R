@@ -1,7 +1,8 @@
 #source(here::here("programs","libraries.R"))
 
-requires(dplyr)
-requires(photobiology)
+
+require(dplyr)
+require(photobiology)
 
 #### 0. Data importation ####
 
@@ -38,4 +39,15 @@ df_temp = df_temp %>%
 # add location of sites
 df_temp = df_temp |> 
   left_join(df_sites_positions, by = "site_id")
+
+# verification of day time/night time compatibility
+if(F){
+  df = df_temp |> 
+    mutate(same_period = as.factor(paste(day_night,day_time,sep="-")))
+  
+  df_diff_daytime = df |> 
+    filter(same_period == "day-Night")
+  
+  print(paste("There is ",nrow(df_diff_daytime)), "time points of night that should be day according to raw data calculation which represent", , "% of all data".)
+}
 
