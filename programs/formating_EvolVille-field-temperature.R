@@ -1,9 +1,13 @@
-#source(here::here("programs","libraries.R"))
-
 require(here)
 require(readxl)
 require(dplyr)
 require(photobiology)
+require(data.table)
+require(sf)
+require(DescTools)
+
+#source(here::here("programs","libraries.R"))
+source(here("functions/funct_spatial-iterpolation.R"))
 
 #### 0. Data importation ####
 
@@ -54,3 +58,13 @@ if(F){
   print(paste((df_diff_daytime |> distinct(site_id) |> nrow() / df |> distinct(site_id) |> nrow())*100, "% of the sites are concerned"))
 }
 
+#### 2. Data interpolation ####
+
+##### 2.1 Mean day temperature calculation ####
+df_temp_mean = df_temp |> 
+  group_by(site_id,date,day_time) |> 
+  summarise(nb_daily_record = n(),
+            mean_temperature = round(sum(temp)/nb_daily_record,2)) |> 
+  ungroup()
+
+# for(){}
