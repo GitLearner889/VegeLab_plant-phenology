@@ -49,6 +49,8 @@ if(F){
   df_diff_daytime = df |> 
     filter(same_period == "day-Night")
   
-  print(paste("There is ",nrow(df_diff_daytime)), "time points of night that should be day according to raw data calculation which represent", , "% of all data".)
+  print(paste("There is ",nrow(df_diff_daytime), "time points of night that should be day according to raw data calculation which represent", round(nrow(df_diff_daytime)/nrow(df),3)*100, "% of all data")) # the number is negligeable, each time it concerns only the transition of night to day or between day to night
+  summary(as.factor(df$same_period))
+  print(paste((df_diff_daytime |> distinct(site_id) |> nrow() / df |> distinct(site_id) |> nrow())*100, "% of the sites are concerned"))
 }
 
