@@ -44,6 +44,9 @@ df_temp = df_temp %>%
 # add location of sites
 df_temp = df_temp |> 
   left_join(df_sites_positions, by = "site_id")
+# remove an outlier data 
+df_temp = df_temp |> 
+  filter(temp < 60)
 
 # verification of day time/night time compatibility
 if(F){
