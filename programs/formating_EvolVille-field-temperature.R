@@ -35,5 +35,7 @@ df_temp = df_temp %>%
                                tz = "Europe/Paris", 
                                geocode = tibble(lon = 7.76811, lat = 48.58325))) %>% # choose the location of botanical garden of Strasbourg (to heavy to implement it for each specific location, and the results is almost the same)
   mutate(day_time = ifelse(day_time, "Day", "Night"))
-
+# add location of sites
+df_temp = df_temp |> 
+  left_join(df_sites_positions, by = "site_id")
 
