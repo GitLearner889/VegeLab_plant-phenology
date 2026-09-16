@@ -5,6 +5,7 @@ require(photobiology)
 require(data.table)
 require(sf)
 require(DescTools)
+require(lubridate)
 
 #source(here::here("programs","libraries.R"))
 source(here("functions/funct_spatial-iterpolation.R"))
@@ -64,10 +65,44 @@ if(F){
 #### 2. Data interpolation ####
 
 ##### 2.1 Mean day temperature calculation ####
-df_temp_mean = df_temp |> 
-  group_by(site_id,date,day_time) |> 
-  summarise(nb_daily_record = n(),
-            mean_temperature = round(sum(temp)/nb_daily_record,2)) |> 
-  ungroup()
+# While calculating the mean temperature of day and night number of measure that should be made in a day 
 
-# for(){}
+# Data-frame off all session (measured made during the same day and at the same lux period)
+df_temp_session <- df_temp %>%
+  # filter(site_id == 1) %>%
+  arrange(site_id, datetime) %>%
+  group_by(site_id) %>%
+  mutate(
+    time_diff = difftime(datetime, lag(datetime), units = "hours"),
+    new_session = if_else(# change the session if
+      is.na(day_time != lag(day_time)) | # first session, initialization 
+      day_time != lag(day_time) | # if switch from day time to night time or vice versa 
+      time_diff > 12 , # if the time between the the two records is greater than 12 h 
+      1, 0), 
+    session_id = cumsum(new_session), # all measures made during the same session will have the same session_id, because add 0, only when session switch add 1
+    session_start = first(datetime), # retrieve start and ending time of the session
+    session_end = last(datetime)
+  ) # so a night session start at day D and stops in the morning of day D+1
+
+# Now can calculate for each session mean temperature and quality indices
+df_session_summary <- df_temp_session %>%
+  group_by(site_id, day_time, session_id) %>%
+  summarise(
+    nb_records = n(),
+    mean_temp = round(mean(temp), 2),
+    max_temp = round(max(temp), 2),
+    min_temp = round(min(temp), 2),
+    session_start = min(datetime),
+    session_end = max(datetime),
+    duration_h = round(difftime(max(datetime), min(datetime), units = "hours"), 1),
+    .groups = "drop"
+  )
+# Clearing of the incomplete data (not enough records and/or during a too short period of time)
+df_session_summary_cleared = df_session_summary |> 
+  filter(as.numeric(duration_h) >= 7 & as.numeric(duration_h) <=16 & nb_records > 6) 
+
+df_temp_mean = df_session_summary_cleared |> 
+  mutate(date = as_date(session_start)) |> 
+  select(site_id, date, mean_temp,day_time)
+
+
