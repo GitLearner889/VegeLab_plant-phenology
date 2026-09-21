@@ -47,4 +47,7 @@ list_target_species = tibble(spe_id = c(79908,127454,127439,94207,113893,106653)
                              family = c("Asteraceae", "Fabaceae","Fabaceae", "Poaceae", "Plantaginaceae", "Fabaceae")) |> 
   arrange(spe_name)
 
+# Sites that should be explored in late september
+potential_sites_of_sampling = data.frame(site_id = c(74, 27, 75, 23, 92, 58, 96, 55, 45, 72)) |> 
+  arrange(site_id)
 
