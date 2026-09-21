@@ -47,7 +47,46 @@ list_target_species = tibble(spe_id = c(79908,127454,127439,94207,113893,106653)
                              family = c("Asteraceae", "Fabaceae","Fabaceae", "Poaceae", "Plantaginaceae", "Fabaceae")) |> 
   arrange(spe_name)
 
+# Dataframe of abundance for each species in each session
+data_trgtspe_session = data_sqr |> 
+  filter(spe_id %in% list_target_species$spe_id) |> 
+  group_by(session_id,site_id,year,spe_id,spe_name) |> 
+  summarise(AB = n()) |> 
+  ungroup()
+
+# Dataframe of abundance of species across all sites for each year
+data_trgtspe_distribution = data_trgtspe_session |> 
+  group_by(spe_id,spe_name,year) |> 
+  summarise(freq_site = n(),
+            AB_Tot = sum(AB)) |> 
+  ungroup()
+
+#### 2. Site data manipulation  ####
+
+##### 2.1 Pre-selected sites ####
 # Sites that should be explored in late september
 potential_sites_of_sampling = data.frame(site_id = c(74, 27, 75, 23, 92, 58, 96, 55, 45, 72)) |> 
   arrange(site_id)
+
+# Count for each year the number of time the species is present in one of the 10 potential sites
+data_trgtspe_session_potential_sites = data_trgtspe_session |> 
+  mutate(potential_site = case_when(
+    site_id %in% potential_sites_of_sampling$site_id ~ 1,
+    T ~ 0
+  )) |> 
+  group_by(spe_id,year) |> 
+  mutate(nb_present_potentiel_site = sum(potential_site)) |> 
+  ungroup()
+
+# Dataframe of abundance of species across all sites for each year
+data_trgtspe_distribution_2025 = data_trgtspe_session_potential_sites |> 
+  group_by(spe_id,spe_name,year,nb_present_potentiel_site) |> 
+  summarise(freq_site = n(),
+            AB_Tot = sum(AB)) |> 
+  ungroup() |> 
+  filter(year == 2025) |>
+  left_join(data_traits |> # Add information on end of flowering periode
+              dplyr::select(spe_name,flw_late), by = "spe_name") |> 
+  mutate(fruiting = ifelse(flw_late >=8 & flw_late < 10, T, F)) 
+
 
