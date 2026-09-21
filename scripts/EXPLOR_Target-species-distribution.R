@@ -38,3 +38,13 @@ data_cwm = data_cwm |>
   rename(year = site_year) |> 
   mutate(session_id = paste(site_id,year, sep = "_")) |> 
   relocate(session_id)
+
+#### 1. Plant data manipulation ####
+
+# List of target species
+list_target_species = tibble(spe_id = c(79908,127454,127439,94207,113893,106653), 
+                             spe_name = c("Achillea millefolium","Trifolium repens","Trifolium pratense","Dactylis glomerata","Plantago lanceolata","Lotus corniculatus"),
+                             family = c("Asteraceae", "Fabaceae","Fabaceae", "Poaceae", "Plantaginaceae", "Fabaceae")) |> 
+  arrange(spe_name)
+
+
