@@ -90,3 +90,28 @@ data_trgtspe_distribution_2025 = data_trgtspe_session_potential_sites |>
   mutate(fruiting = ifelse(flw_late >=8 & flw_late < 10, T, F)) 
 
 
+#### 3. Management data ####
+# Retrieve management data 
+source(here("programs/formatage-gestion.R"))
+
+# Reduce dataframe to needed values
+data_mngt_reduced =  data_management |> 
+  filter(as.numeric(year) <= 2025) |> # to be coherent with plant data
+  mutate(gestion_classe_fct = as.factor(gestion_classe)) |> 
+  mutate(gestion_classe_num = as.numeric(gestion_classe_fct)) |> 
+  dplyr::select(session_id,site_id, year, gestion, gestion_classe_num)
+
+##### 3.1 Indices for each- sites ##### 
+# Quantitative indices about management
+data_mngt_quanti_per_site = data_mngt_reduced |> 
+  group_by(site_id) |> 
+  summarise(mean_mngt_class = round(mean(gestion_classe_num, na.rm = T),2),
+            sd_mngt_class = round(sd(gestion_classe_num, na.rm = T),3),
+            min_mngt_class = min(gestion_classe_num, na.rm = T),
+            max_mngt_class = max(gestion_classe_num, na.rm = T),
+            nb_session = n())
+
+# Add managemeny infos of potential sites
+potential_sites_of_sampling = potential_sites_of_sampling |> 
+  left_join(data_mngt_quanti_per_site, by = "site_id", )
+
