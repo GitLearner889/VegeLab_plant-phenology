@@ -151,7 +151,7 @@ if(F){
 # Graphs of temperature evolution for each site
 if(F){
   # Temperature evolution over time for the 16 first sites
-  df_temp_mean |> 
+  df_temp_daily_mean_cl |> 
     filter(site_id <= 27) |> 
     ggplot(aes(x = as.Date(as.character(date)), y = mean_temp, color = day_time)) +
     geom_line() +
@@ -159,7 +159,7 @@ if(F){
     theme_bw() +
     facet_wrap(~ site_id)
   # Temperature evolution over time for the 16 following sites
-  df_temp_mean |> 
+  df_temp_daily_mean_cl |> 
     filter(site_id > 27 & site_id <=46) |> 
     ggplot(aes(x = as.Date(as.character(date)), y = mean_temp, color = day_time)) +
     geom_line() +
@@ -167,7 +167,7 @@ if(F){
     theme_bw() +
     facet_wrap(~ site_id)
   # Temperature evolution over time for the 16 following sites
-  df_temp_mean |> 
+  df_temp_daily_mean_cl |> 
     filter(site_id > 46 & site_id <=68) |> 
     ggplot(aes(x = as.Date(as.character(date)), y = mean_temp, color = day_time)) +
     geom_line() +
@@ -175,7 +175,7 @@ if(F){
     theme_bw() +
     facet_wrap(~ site_id)
   # Temperature evolution over time for the 16 following sites
-  df_temp_mean |> 
+  df_temp_daily_mean_cl |> 
     filter(site_id > 68 & site_id <=92) |> 
     ggplot(aes(x = as.Date(as.character(date)), y = mean_temp, color = day_time)) +
     geom_line() +
@@ -183,7 +183,7 @@ if(F){
     theme_bw() +
     facet_wrap(~ site_id)
   # Temperature evolution over time for the last 12 sites
-  df_temp_mean |> 
+  df_temp_daily_mean_cl |> 
     filter(site_id > 92 & site_id <=110) |> 
     ggplot(aes(x = as.Date(as.character(date)), y = mean_temp, color = day_time)) +
     geom_line() +
@@ -191,6 +191,17 @@ if(F){
     theme_bw() +
     facet_wrap(~ site_id)
 }
+
+# Graphs of missing mean temperature data at the global scale
+if(F){
+  # Number of sites recorded across time
+  df_temp_daily_mean_cl |> 
+    group_by(date) |> 
+    summarise(nb_sites_recording = n()/2) |> 
+    ggplot(aes(x = date, y = nb_sites_recording)) +
+    geom_col()
+}
+
 
 
 
