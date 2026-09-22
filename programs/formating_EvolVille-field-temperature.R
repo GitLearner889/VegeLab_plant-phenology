@@ -65,6 +65,28 @@ if(F){
 }
 
 
+#### 2. Temperature averaging  ####
+
+##### 2.1 Daily mean ####
+# While calculating the mean temperature of day and night number of measure that should be made in a day 
+# Data-frame off all session (measured made during the same day and at the same lux period)
+df_temp_session <- df_temp %>%
+  arrange(site_id, datetime) %>%
+  group_by(site_id) %>%
+  mutate(
+    time_diff = difftime(datetime, lag(datetime), units = "hours"),
+    new_session = if_else(# change the session if:
+      is.na(day_time != lag(day_time)) | # first session (initialization) 
+        day_time != lag(day_time) | # switch from day time to night time or vice versa 
+        time_diff > 12 , #  the time between the the two recordings is greater than 12 h 
+      1, 0), 
+    session_id = cumsum(new_session), # all measures made during the same session will have the same session_id, because add 0, only when session switch add 1
+    session_start = first(datetime), # retrieve start and ending time of the session
+    session_end = last(datetime)
+  ) # so a night session start at sunset of day D and stops at sunrise of day D+1
+
+
+
 ##### 2.2 Mean temperature interpolation #####
 
 for(date in df_temp_mean$date){
