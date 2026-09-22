@@ -85,7 +85,19 @@ df_temp_session <- df_temp %>%
     session_end = last(datetime)
   ) # so a night session start at sunset of day D and stops at sunrise of day D+1
 
-
+# Now can calculate for each session mean temperature and quality indices
+df_session_summary <- df_temp_session %>%
+  group_by(site_id, day_time, session_id) %>%
+  summarise(
+    nb_records = n(),
+    mean_temp = round(mean(temp), 2),
+    max_temp = round(max(temp), 2),
+    min_temp = round(min(temp), 2),
+    session_start = min(datetime),
+    session_end = max(datetime),
+    duration_h = round(difftime(max(datetime), min(datetime), units = "hours"), 1),
+    .groups = "drop"
+  )
 
 ##### 2.2 Mean temperature interpolation #####
 
