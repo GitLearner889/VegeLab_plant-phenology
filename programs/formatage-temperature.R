@@ -1,7 +1,7 @@
 source(here::here("programs","libraries.R"))
 test = F
 
-df_temperature_all_raw = read.table(here("data/data_environnement/ibutton_all.txt"), header = T, sep = "\t")
+df_temperature_all_raw = read.table(here("data/data_environment/ibutton_all.txt"), header = T, sep = "\t")
 
 df_temperature_all = df_temperature_all_raw %>% 
   mutate(datetime_cet = ymd_hms(datetime_cet),
@@ -89,6 +89,7 @@ ggplot(df_temperature_all,aes(x = date, y = temp)) +
   geom_line() +
   facet_wrap(~ site)
 
+
 df_temperature_all %>% 
   filter(site == 1) %>% 
   ggplot(aes(x = date, y = temp)) +
@@ -96,11 +97,48 @@ df_temperature_all %>%
   facet_wrap(~ site)
 
 
+sites_list <- sort(unique(df_temperature_all$site))
+n_sites_per_plot <- 4
+n_plots <- ceiling(length(sites_list) / n_sites_per_plot)
+
+message(paste("Total :", length(sites_list), "sites à afficher en", n_plots, "lots"))
+
+for(i in 1:n_plots) {
+  message(paste("\n=== LOT", i, "/", n_plots, "==="))
+  
+  sites_chunk <- sites_list[((i - 1) * n_sites_per_plot + 1):min(i * n_sites_per_plot, length(sites_list))]
+  
+  df_plot <- filter(df_temperature_all, site %in% sites_chunk)
+  
+  p <- ggplot(df_plot, aes(x = date, y = temp)) +
+    geom_line(aes(color = factor(site))) +
+    facet_wrap(~ site, ncol = 2) +
+    labs(
+      title = paste("Sites", min(sites_chunk), "-", max(sites_chunk)),
+      x = "Date",
+      y = "Température"
+    ) +
+    theme_minimal() +
+    theme(legend.position = "bottom", legend.title = element_blank())
+  
+  # Afficher le graphique
+  print(p)
+  
+  # Attendre que l'utilisateur appuie sur Entrée avant de continuer
+  cat("\nAppuyez sur Entrée pour afficher le lot suivant (ou 'q' pour quitter) : ")
+  response <- readline(prompt = "> ")
+  
+  if(tolower(response) == "q") {
+    message("Arrêté par l'utilisateur.")
+    break
+  }
+}
+
 
 df_temp_triees %>% 
   group_by(site_id) %>% 
   summarise(mean_temp = mean(temp)) %>% 
-  view()
+  View()
 #### Date ####
 
 df_date = df_temp_triees %>% 
