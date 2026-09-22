@@ -109,6 +109,43 @@ df_temp_daily_mean_cl = df_session_summary_cleared |>
   select(site_id, date, mean_temp,day_time) |> 
   left_join(df_sites_positions, by = "site_id")
 
+
+# Exploration of the problems of the session data
+if(F){
+  # Distribution of number of records per session
+  df_session_summary |> 
+    group_by(nb_records) |> 
+    count() |> 
+    View()
+  # Focus on the session with more than 50 records
+  df_session_summary |> 
+    filter(nb_records > 50) |> 
+    View()
+  # Distribution of the duration of session
+  df_session_summary |> 
+    group_by(duration_h) |> 
+    count() |> 
+    View()
+  # Check if there is days where there is more than 2 sessions 
+  df_session_summary |> 
+    mutate(date = lubridate::as_date(session_start)) |> 
+    group_by(date,site_id) |> 
+    mutate(n_session_date = n()) |> 
+    ungroup() |> 
+    filter(n_session_date == 3) |> 
+    View()
+  # Check that with the good filters, if there is still days with 3 sessions
+  df_session_summary |> 
+    filter(as.numeric(duration_h) >= 7 & as.numeric(duration_h) <=16 & nb_records >= 6) |> 
+    mutate(date = lubridate::as_date(session_start)) |> 
+    group_by(date,site_id) |> 
+    mutate(n_session_date = n()) |> 
+    ungroup() |> 
+    filter(n_session_date == 3) |> 
+    View()
+}
+
+
 ##### 2.2 Mean temperature interpolation #####
 
 for(date in df_temp_mean$date){
