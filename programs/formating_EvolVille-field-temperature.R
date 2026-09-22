@@ -220,6 +220,46 @@ df_temp_monthly_mean_cl = df_temp_monthly_data |>
   filter(year >2021 & year < 2026)
 
 
+# Graphs of proportion of days followed each month since the beginning for each site
+if(F){
+  # With a clored gradient
+  df_temp_monthly_data |> 
+    filter(year > 2020 & year <2026) |> 
+    mutate(date = as.Date(paste(year,month,"01", sep="-"))) |> 
+    ggplot(aes(x = date, y = as.factor(site_id), fill = prop_days)) +
+    geom_tile() +
+    scale_fill_gradientn(
+      colors = c("#FFFFFF", "#00FF00", "#0000FF", "#FF0000", "#000000"),
+      values = scales::rescale(c(0, 0.25, 0.5, 0.75, 1)),
+      name = "Prop. jours\navec données",
+      limits = c(0, 1)) + 
+    theme_bw()
+  # In black and white 
+  df_temp_monthly_data |> 
+    filter(year > 2020 & year <2026) |> 
+    mutate(date = as.Date(paste(year,month,"01", sep="-"))) |> 
+    ggplot(aes(x = date, y = as.factor(site_id), fill = prop_days)) +
+    geom_tile() +
+    scale_fill_gradientn(
+      colors = c("#FFFFFF","#000000"),
+      values = scales::rescale(c(0,1)),
+      name = "Prop. jours\navec données",
+      limits = c(0, 1)) + 
+    theme_bw()
+  # Show only months that are followed everyday 
+  df_temp_monthly_data |> 
+    filter(year > 2020 & year <2026 & prop_days == 1) |> 
+    mutate(date = as.Date(paste(year,month,"01", sep="-"))) |> 
+    ggplot(aes(x = date, y = as.factor(site_id), fill = prop_days)) +
+    geom_tile() +
+    scale_fill_gradientn(
+      colors = c("#FFFFFF","#000000"),
+      values = scales::rescale(c(0,1)),
+      name = "Prop. jours\navec données",
+      limits = c(0, 1)) + 
+    theme_bw()
+}
+
 ##### 2.2 Mean temperature interpolation #####
 
 for(date in df_temp_mean$date){
