@@ -202,7 +202,22 @@ if(F){
     geom_col()
 }
 
+##### 2.2 Monthly mean #####
 
+df_temp_monthly_data = df_temp_daily_mean_cl |> 
+  mutate(year = year(date),
+         month = month(date),
+         days_per_month = days_in_month(date)) |> 
+  group_by(year,month, site_id,day_time) |> 
+  mutate(nb_days = n()) |> 
+  ungroup() |> 
+  mutate(prop_days = nb_days/days_per_month) 
+
+df_temp_monthly_mean_cl = df_temp_monthly_data |> 
+  filter(prop_days == 1) |> 
+  group_by(site_id,year,month,day_time) |> 
+  summarise(monthly_temp = round(mean(mean_temp),2)) |> 
+  filter(year >2021 & year < 2026)
 
 
 ##### 2.2 Mean temperature interpolation #####
