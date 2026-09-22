@@ -99,6 +99,11 @@ df_session_summary <- df_temp_session %>%
     .groups = "drop"
   )
 
+# Clearing of the incomplete data (not enough records and/or during a too short period of time)
+df_session_summary_cleared = df_session_summary |> 
+  filter(as.numeric(duration_h) >= 7 & as.numeric(duration_h) <=16 & nb_records > 6) 
+
+
 ##### 2.2 Mean temperature interpolation #####
 
 for(date in df_temp_mean$date){
