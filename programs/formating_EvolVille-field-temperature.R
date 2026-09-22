@@ -147,6 +147,53 @@ if(F){
 }
 
 ###### 2.1.3 Graphical exploration ###### 
+
+# Graphs of temperature evolution for each site
+if(F){
+  # Temperature evolution over time for the 16 first sites
+  df_temp_mean |> 
+    filter(site_id <= 27) |> 
+    ggplot(aes(x = as.Date(as.character(date)), y = mean_temp, color = day_time)) +
+    geom_line() +
+    scale_color_manual(values = c("steelblue","gold")) +
+    theme_bw() +
+    facet_wrap(~ site_id)
+  # Temperature evolution over time for the 16 following sites
+  df_temp_mean |> 
+    filter(site_id > 27 & site_id <=46) |> 
+    ggplot(aes(x = as.Date(as.character(date)), y = mean_temp, color = day_time)) +
+    geom_line() +
+    scale_color_manual(values = c("steelblue","gold")) +
+    theme_bw() +
+    facet_wrap(~ site_id)
+  # Temperature evolution over time for the 16 following sites
+  df_temp_mean |> 
+    filter(site_id > 46 & site_id <=68) |> 
+    ggplot(aes(x = as.Date(as.character(date)), y = mean_temp, color = day_time)) +
+    geom_line() +
+    scale_color_manual(values = c("steelblue","gold")) +
+    theme_bw() +
+    facet_wrap(~ site_id)
+  # Temperature evolution over time for the 16 following sites
+  df_temp_mean |> 
+    filter(site_id > 68 & site_id <=92) |> 
+    ggplot(aes(x = as.Date(as.character(date)), y = mean_temp, color = day_time)) +
+    geom_line() +
+    scale_color_manual(values = c("steelblue","gold")) +
+    theme_bw() +
+    facet_wrap(~ site_id)
+  # Temperature evolution over time for the last 12 sites
+  df_temp_mean |> 
+    filter(site_id > 92 & site_id <=110) |> 
+    ggplot(aes(x = as.Date(as.character(date)), y = mean_temp, color = day_time)) +
+    geom_line() +
+    scale_color_manual(values = c("steelblue","gold")) +
+    theme_bw() +
+    facet_wrap(~ site_id)
+}
+
+
+
 ##### 2.2 Mean temperature interpolation #####
 
 for(date in df_temp_mean$date){
