@@ -103,6 +103,11 @@ df_session_summary <- df_temp_session %>%
 df_session_summary_cleared = df_session_summary |> 
   filter(as.numeric(duration_h) >= 7 & as.numeric(duration_h) <=16 & nb_records > 6) 
 
+# Applying the cretirions to have a relevant and clean daily mean temperature dataset
+df_temp_daily_mean_cl = df_session_summary_cleared |> 
+  mutate(date = as.Date(session_start)) |> 
+  select(site_id, date, mean_temp,day_time) |> 
+  left_join(df_sites_positions, by = "site_id")
 
 ##### 2.2 Mean temperature interpolation #####
 
