@@ -68,6 +68,7 @@ if(F){
 #### 2. Temperature averaging  ####
 
 ##### 2.1 Daily mean ####
+###### 2.1.1 Computing ####
 # While calculating the mean temperature of day and night number of measure that should be made in a day 
 # Data-frame off all session (measured made during the same day and at the same lux period)
 df_temp_session <- df_temp %>%
@@ -109,7 +110,7 @@ df_temp_daily_mean_cl = df_session_summary_cleared |>
   select(site_id, date, mean_temp,day_time) |> 
   left_join(df_sites_positions, by = "site_id")
 
-
+###### 2.1.2 Table exploration ########
 # Exploration of the problems of the session data
 if(F){
   # Distribution of number of records per session
@@ -145,7 +146,7 @@ if(F){
     View()
 }
 
-
+###### 2.1.3 Graphical exploration ###### 
 ##### 2.2 Mean temperature interpolation #####
 
 for(date in df_temp_mean$date){
