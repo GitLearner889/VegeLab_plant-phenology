@@ -263,7 +263,11 @@ if(F){
 
 #### 3. Ranking as a proxy ####
 
-func_rank_temporal_and_group <- function(df, var_use_to_rank = "monthly_temp", group_col = "day_time", temporal_id = "date", element_id = "site_id") {
+func_rank_temporal_and_group <- function(df, 
+                                         var_use_to_rank = "monthly_temp", 
+                                         group_col = "day_time", 
+                                         temporal_id = "date", 
+                                         element_id = "site_id") {
   df_rank = df %>%
     # compute the rank for each group, for each temporal_id
     group_by(!!sym(group_col), !!sym(temporal_id)) |> 
@@ -318,8 +322,54 @@ if(F){
     theme_minimal()
 }
 
-df_temp_daily_mean_cl_rk |> 
-  filter(nb_sites_evaluated > 30) |> 
-  ggplot(aes(x = normalised_rank)) +
-  geom_histogram() +
-  facet_wrap(~ site_id, scales = "free_y")
+# Graph of rank distribution for each site
+if(F){
+  df_temp_daily_mean_cl_rk |> 
+    filter(nb_sites_evaluated > 30) |> 
+    ggplot(aes(x = normalised_rank)) +
+    geom_histogram() +
+    facet_wrap(~ site_id, scales = "free_y")
+}
+
+# Graph of mean rank site distribution
+if(F){
+  # Distribution from the cooler site to the warmer at night
+  df_temp_daily_mean_cl_rk |> 
+    filter(nb_sites_evaluated > 30) |>
+    group_by(site_id,day_time) |> 
+    summarise(mean_rank = mean(normalised_rank), .groups = "drop") |>
+    group_by(site_id) |> 
+    mutate(site_night_order = mean_rank[day_time == "Night"]) |> 
+    ungroup() |> 
+    arrange(site_night_order) |> 
+    mutate(site_id = factor(site_id, levels = unique(site_id))) |> 
+    ggplot(aes(x = site_id, y = mean_rank, fill = day_time)) +
+    geom_col(position = position_dodge(width = 0.8)) +
+    scale_fill_manual(values = c("Day" = "gold", "Night" = "steelblue")) +
+    labs(x = "Site", y = "Mean temperature rank", 
+         title = "Mean temperature rank per site and day time") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          legend.title = element_blank())
+  
+  # Distribution from the cooler site to the warmer at day
+  df_temp_daily_mean_cl_rk |> 
+    filter(nb_sites_evaluated > 30) |>
+    group_by(site_id,day_time) |> 
+    summarise(mean_rank = mean(normalised_rank), .groups = "drop") |>
+    group_by(site_id) |> 
+    mutate(site_day_order = mean_rank[day_time == "Day"]) |> 
+    ungroup() |> 
+    arrange(site_day_order) |> 
+    mutate(site_id = factor(site_id, levels = unique(site_id))) |> 
+    ggplot(aes(x = site_id, y = mean_rank, fill = day_time)) +
+    geom_col(position = position_dodge(width = 0.8)) +
+    scale_fill_manual(values = c("Day" = "gold", "Night" = "steelblue")) +
+    labs(x = "Site", y = "Mean temperature rank", 
+         title = "Mean temperature rank per site and day time") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          legend.title = element_blank())
+  
+}
+
