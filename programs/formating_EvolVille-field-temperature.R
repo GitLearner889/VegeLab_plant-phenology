@@ -400,4 +400,14 @@ if(F){
     labs(x = "Mean temperature rank", y = "Mean temperature", color = "Site")
 }
 
+#### 4. Spatial interpolation #### 
 
+
+
+#### 5. Out put ####
+
+# df_daily_temp = df_temp_daily_mean_cl_rk
+# df_monthly_temp = df_temp_monthly_mean_cl_rk
+# df_daily_temp_interpolated = df
+# 
+# rm(df_temp, df_temp_session, df_sites_info, df_sites_positions, df_temperature_all_raw, df_temp_daily_mean_cl_rk, df_temp_daily_mean_cl,df_temp_monthly_mean_cl, df_temp_monthly_mean_cl_rk)
