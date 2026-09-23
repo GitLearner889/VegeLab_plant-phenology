@@ -108,7 +108,8 @@ df_session_summary_cleared = df_session_summary |>
 df_temp_daily_mean_cl = df_session_summary_cleared |> 
   mutate(date = as.Date(session_start)) |> 
   select(site_id, date, mean_temp,day_time) |> 
-  left_join(df_sites_positions, by = "site_id")
+  left_join(df_sites_positions, by = "site_id") |> 
+  rename(daily_temp = "mean_temp")
 
 ###### 2.1.2 Table exploration ########
 # Exploration of the problems of the session data
@@ -262,9 +263,6 @@ if(F){
 
 #### 3. Ranking as a proxy ####
 
-##### 3.1 Monthly basis ####
-
-
 func_rank_temporal_and_group <- function(df, var_use_to_rank = "monthly_temp", group_col = "day_time", temporal_id = "date", element_id = "site_id") {
   df_rank = df %>%
     # compute the rank for each group, for each temporal_id
@@ -274,7 +272,6 @@ func_rank_temporal_and_group <- function(df, var_use_to_rank = "monthly_temp", g
            normalised_rank = (raw_rank - 1) / (nb_sites_evaluated - 1)) |> 
     ungroup() |> 
     dplyr::select(all_of(c(temporal_id, group_col,element_id,"normalised_rank", "nb_sites_evaluated")))
-  print(df_rank)
   
   new_df = df |> 
     left_join(df_rank, by = c(group_col, temporal_id, element_id))
@@ -282,7 +279,18 @@ func_rank_temporal_and_group <- function(df, var_use_to_rank = "monthly_temp", g
   return(new_df)
 }
 
-df = func_rank_temporal_and_group(df_temp_monthly_mean_cl |> 
+##### 3.1 Daily basis ####
+
+df_temp_daily_mean_cl_rk = func_rank_temporal_and_group(df_temp_daily_mean_cl, 
+                                                          temporal_id = "date", 
+                                                          group_col = "day_time",
+                                                          var_use_to_rank = "daily_temp",
+                                                          element_id = "site_id")
+
+
+##### 3.2 Monthly basis ####
+
+df_temp_monthly_mean_cl_rk = func_rank_temporal_and_group(df_temp_monthly_mean_cl |> 
                                mutate(date = paste(year,month, sep = "-")), 
                              temporal_id = "date", 
                              group_col = "day_time",
