@@ -274,7 +274,8 @@ func_rank_temporal_and_group <- function(df, var_use_to_rank = "monthly_temp", g
     dplyr::select(all_of(c(temporal_id, group_col,element_id,"normalised_rank", "nb_sites_evaluated")))
   
   new_df = df |> 
-    left_join(df_rank, by = c(group_col, temporal_id, element_id))
+    left_join(df_rank, by = c(group_col, temporal_id, element_id)) |> 
+    ungroup()
   
   return(new_df)
 }
@@ -297,3 +298,28 @@ df_temp_monthly_mean_cl_rk = func_rank_temporal_and_group(df_temp_monthly_mean_c
                              var_use_to_rank = "monthly_temp",
                              element_id = "site_id")
 
+
+# Graphs number of sites records over time 
+if(F){
+  # Daily baisis
+  df_temp_daily_mean_cl_rk |> 
+    filter(date > "2021-12-12" & day_time == "Day") |> 
+    distinct(date,nb_sites_evaluated) |>
+    ggplot(aes(x = date, y = nb_sites_evaluated)) +
+    geom_col() +
+    theme_minimal()
+  # Daily basis
+  df_temp_monthly_mean_cl_rk |> 
+    filter(day_time == "Day") |> 
+    mutate(date = as.Date(paste0(date,"-01"))) |> 
+    distinct(date,nb_sites_evaluated) |>
+    ggplot(aes(x = date, y = nb_sites_evaluated)) +
+    geom_col() +
+    theme_minimal()
+}
+
+df_temp_daily_mean_cl_rk |> 
+  filter(nb_sites_evaluated > 30) |> 
+  ggplot(aes(x = normalised_rank)) +
+  geom_histogram() +
+  facet_wrap(~ site_id, scales = "free_y")
