@@ -463,26 +463,48 @@ data_temp_daily_complete_min30 =  bind_rows(
   df_temp_daily_mean_cl_rk |> mutate(data_type = "observed"),
   df_interp_30
 ) |> 
-  mutate(data_type = as.factor(data_type))
-summary(data_temp_daily_complete_min30)
+  mutate(data_type = as.factor(data_type)) |> 
+  rename(normalised_rank_old = normalised_rank,
+         nb_sites_observed = nb_sites_evaluated)
 
-# Graphs
-data_temp_daily_complete_min30 |> 
-  rename(nb_sites_observed = nb_sites_evaluated) |> 
-  group_by(date, day_time) |> 
-  mutate(nb_all_sites = n()) |> 
-  ungroup() |> 
-  filter(date > "2021-12-12" & day_time == "Day") |> 
-  distinct(date,nb_all_sites) |>
-  ggplot(aes(x = date, y = nb_all_sites)) +
-  geom_col() +
-  theme_minimal()
+# Add new ranking
+data_temp_daily_complete_min30_rk = func_rank_temporal_and_group(df = data_temp_daily_complete_min30,
+                             var_use_to_rank = "daily_temp",
+                             group_col = "day_time",
+                             temporal_id = "date",
+                             element_id = "site_id")
+  
 
+
+# Graphs number of sites followed over time 
+if(F){
+  data_temp_daily_complete_min30 |> 
+    rename(nb_sites_observed = nb_sites_evaluated) |> 
+    group_by(date, day_time) |> 
+    mutate(nb_all_sites = n()) |> 
+    ungroup() |> 
+    filter(date > "2021-12-12" & day_time == "Day") |> 
+    distinct(date,nb_all_sites) |>
+    ggplot(aes(x = date, y = nb_all_sites)) +
+    geom_col() +
+    theme_minimal()
+  }
+
+if(F){
+  # correlation between old and new ranking
+  data_temp_daily_complete_min30_rk |> 
+    ggplot(aes(x = normalised_rank_old, y = normalised_rank )) +
+    geom_point()
+  # Distribution of diffrence between old and new ranking
+  data_temp_daily_complete_min30_rk |> 
+    ggplot(aes(x = normalised_rank_old - normalised_rank )) +
+    geom_histogram()
+} 
 
 #### 5. Out put ####
 
-# df_daily_temp = df_temp_daily_mean_cl_rk
-# df_monthly_temp = df_temp_monthly_mean_cl_rk
-# df_daily_temp_interpolated = df
-# 
-# rm(df_temp, df_temp_session, df_sites_info, df_sites_positions, df_temperature_all_raw, df_temp_daily_mean_cl_rk, df_temp_daily_mean_cl,df_temp_monthly_mean_cl, df_temp_monthly_mean_cl_rk)
+data_daily_temp = df_temp_daily_mean_cl_rk
+data_monthly_temp = df_temp_monthly_mean_cl_rk
+data_daily_temp_interpolated = data_temp_daily_complete_min30_rk
+
+rm(df_temp, df_temp_session, df_sites_info, df_sites_positions,df_sites_positions_corr, df_temperature_all_raw, df_temp_daily_mean_cl_rk, df_temp_daily_mean_cl,df_temp_monthly_mean_cl, df_temp_monthly_mean_cl_rk)
