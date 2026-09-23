@@ -260,10 +260,32 @@ if(F){
     theme_bw()
 }
 
-##### 2.2 Mean temperature interpolation #####
+#### 3. Ranking as a proxy ####
 
-for(date in df_temp_mean$date){
-  empty_dates = 
-}
+##### 3.1 Monthly basis ####
+
+
+func_rank_temporal_and_group <- function(df, var_use_to_rank = "monthly_temp", group_col = "day_time", temporal_id = "date", element_id = "site_id") {
+  df_rank = df %>%
+    # compute the rank for each group, for each temporal_id
+    group_by(!!sym(group_col), !!sym(temporal_id)) |> 
+    mutate(raw_rank = rank(!!sym(var_use_to_rank), ties.method = "average"),
+           nb_sites_evaluated = n(),
+           normalised_rank = (raw_rank - 1) / (nb_sites_evaluated - 1)) |> 
+    ungroup() |> 
+    dplyr::select(all_of(c(temporal_id, group_col,element_id,"normalised_rank", "nb_sites_evaluated")))
+  print(df_rank)
   
+  new_df = df |> 
+    left_join(df_rank, by = c(group_col, temporal_id, element_id))
+  
+  return(new_df)
+}
+
+df = func_rank_temporal_and_group(df_temp_monthly_mean_cl |> 
+                               mutate(date = paste(year,month, sep = "-")), 
+                             temporal_id = "date", 
+                             group_col = "day_time",
+                             var_use_to_rank = "monthly_temp",
+                             element_id = "site_id")
 
