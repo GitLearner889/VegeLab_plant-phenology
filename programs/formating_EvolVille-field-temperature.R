@@ -415,6 +415,13 @@ colnames(dist_sites) <- df_sites_positions_corr$site_id
 
 ##### 4.2 Interpolation ####
 
+# Inverse Distance Weighting function
+idw_point <- function(distances, data_values, beta = -2){
+  weights <- distances^beta
+  as.vector((weights %*% data_values) / rowSums(weights))
+}
+
+
 
 #### 5. Out put ####
 
