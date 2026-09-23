@@ -451,7 +451,32 @@ interpolate_missing_sites = function(data, sites_infos, dist_matrix,  min_sites 
   return(df_temp_interp)
 }
 
+df_interp_30 <- interpolate_missing_sites(data = df_temp_daily_mean_cl_rk, 
+                                          sites_infos = df_sites_positions_corr, 
+                                          dist_matrix = dist_sites,
+                                          min_sites = 30) |> 
+  mutate(data_type = "interpolated")
 
+##### 4.3 Data merging  #####
+
+data_temp_daily_complete_min30 =  bind_rows(
+  df_temp_daily_mean_cl_rk |> mutate(data_type = "observed"),
+  df_interp_30
+) |> 
+  mutate(data_type = as.factor(data_type))
+summary(data_temp_daily_complete_min30)
+
+# Graphs
+data_temp_daily_complete_min30 |> 
+  rename(nb_sites_observed = nb_sites_evaluated) |> 
+  group_by(date, day_time) |> 
+  mutate(nb_all_sites = n()) |> 
+  ungroup() |> 
+  filter(date > "2021-12-12" & day_time == "Day") |> 
+  distinct(date,nb_all_sites) |>
+  ggplot(aes(x = date, y = nb_all_sites)) +
+  geom_col() +
+  theme_minimal()
 
 
 #### 5. Out put ####
