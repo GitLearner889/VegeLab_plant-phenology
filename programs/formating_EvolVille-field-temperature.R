@@ -373,3 +373,18 @@ if(F){
   
 }
 
+# Graph of relationship between average temperature and average rank
+if(F){
+  df_temp_daily_mean_cl_rk |> 
+    filter(nb_sites_evaluated > 30) |>
+    group_by(site_id,day_time) |> 
+    summarise(mean_rank = mean(normalised_rank), 
+              mean_temp = mean(daily_temp),
+              .groups = "drop") |>
+    ggplot(aes(x = mean_rank, y = mean_temp, color = as.factor(site_id))) +
+    geom_point() +
+    facet_wrap(~ day_time, scales = "free_y") +
+    theme_bw() +
+    labs(x = "Mean temperature rank", y = "Mean temperature", color = "Site")
+}
+
