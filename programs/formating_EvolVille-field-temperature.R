@@ -39,7 +39,9 @@ df_sites_positions_corr = df_sites_info |>
   dplyr::select(site_id,site_lon,site_lat) |> 
   mutate(site_id = as.numeric(site_id),
          site_lon = as.numeric(site_lon),
-         site_lat = as.numeric(site_lat))
+         site_lat = as.numeric(site_lat)) |> 
+  filter(site_id %in% df_temperature_all_raw$site)
+  
 
 ##### 1.2 iButton data #####
 # format date and time of temperature data
@@ -229,7 +231,7 @@ df_temp_monthly_data = df_temp_daily_mean_cl |>
 df_temp_monthly_mean_cl = df_temp_monthly_data |> 
   filter(prop_days == 1) |> 
   group_by(site_id,year,month,day_time) |> 
-  summarise(monthly_temp = round(mean(mean_temp),2)) |> 
+  summarise(monthly_temp = round(mean(daily_temp),2)) |> 
   filter(year >2021 & year < 2026)
 
 
@@ -402,6 +404,16 @@ if(F){
 
 #### 4. Spatial interpolation #### 
 
+##### 4.1 Matrice of distance computing #####
+sites_sf <- df_sites_positions_corr %>% 
+  st_as_sf(coords = c("site_lon", "site_lat"), crs = 4326) %>% 
+  st_transform(2154) # adapted to calculate distance on small scales
+
+dist_sites <- as.matrix(st_distance(sites_sf)) # compute distance and make it a matrix object
+rownames(dist_sites) <- df_sites_positions_corr$site_id
+colnames(dist_sites) <- df_sites_positions_corr$site_id
+
+##### 4.2 Interpolation ####
 
 
 #### 5. Out put ####
