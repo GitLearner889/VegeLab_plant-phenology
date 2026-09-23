@@ -149,8 +149,45 @@ trgtspe_management_indices =  data_trgtspe_session_mngt|>
     tot_mngt_class = n_distinct(gestion_classe_num)) |> 
   ungroup()
 
+
+#### 4. Temperature data ####
+
+data_temp = read.csv2(file = here("data/data_environment/ibutton_daily_temperature_corr_and_interpolated.csv"))
+
+data_temp_60sites = data_temp |> 
+  filter(nb_sites_evaluated == 60 )
+
+data_temp_60sites_mean = data_temp_60sites |> 
+  group_by(site_id,day_time) |> 
+  summarise(mean_temperature = mean(daily_temp),
+            mean_rank = mean(normalised_rank))
+
+data_temp_60sites_mean |> 
+  ggplot(aes(x = mean_rank, y = mean_temperature, color = as.factor(site_id))) +
+  geom_point() +
+  facet_wrap(~ day_time, scales = "free_y") +
+  theme_bw()
+
+data_temp_60sites_mean |> 
+  pivot_wider(id_cols = "site_id", 
+              values_from = c("mean_temperature","mean_rank"), 
+              names_from = "day_time") |> 
+  ggplot(aes(x = mean_temperature_Night, y = mean_temperature_Day, color = as.factor(site_id))) +
+  geom_point() +
+  theme_bw()
+
+data_temp_60sites_mean |> 
+  pivot_wider(id_cols = "site_id", 
+              values_from = c("mean_temperature","mean_rank"), 
+              names_from = "day_time") |> 
+  ggplot(aes(x = mean_rank_Night, y = mean_rank_Day, color = as.factor(site_id))) +
+  geom_point() +
+  theme_bw()
+
 # Create a dataframe with important variable to choose species
 
 data_selection = data_spe_distribution_2025 |>
   left_join(spe_management_indices |> select(spe_name, weighted_mean_mngt_intensity, weighted_sd_mngt_intensity), by = "spe_name") 
+
+
 
