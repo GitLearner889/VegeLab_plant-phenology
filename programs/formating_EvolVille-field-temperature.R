@@ -29,6 +29,18 @@ df_sites_positions = df_sites_info |>
          site_lon_trapnest = as.numeric(site_lon_trapnest),
          site_lat_trapnest = as.numeric(site_lat_trapnest))
 
+df_sites_positions_corr = df_sites_info |> 
+  mutate(site_lon = case_when(
+    !is.na(site_lon_trapnest) ~ site_lon_trapnest,
+    T ~ site_lon_flora),
+    site_lat = case_when(
+      !is.na(site_lat_trapnest) ~ site_lat_trapnest,
+      T ~ site_lat_flora)) |> 
+  dplyr::select(site_id,site_lon,site_lat) |> 
+  mutate(site_id = as.numeric(site_id),
+         site_lon = as.numeric(site_lon),
+         site_lat = as.numeric(site_lat))
+
 ##### 1.2 iButton data #####
 # format date and time of temperature data
 df_temp = df_temperature_all_raw %>% 
@@ -46,7 +58,7 @@ df_temp = df_temp %>%
   mutate(day_time = ifelse(day_time, "Day", "Night"))
 # add location of sites
 df_temp = df_temp |> 
-  left_join(df_sites_positions, by = "site_id")
+  left_join(df_sites_positions_corr, by = "site_id")
 # remove an outlier data 
 df_temp = df_temp |> 
   filter(temp < 60)
@@ -108,7 +120,7 @@ df_session_summary_cleared = df_session_summary |>
 df_temp_daily_mean_cl = df_session_summary_cleared |> 
   mutate(date = as.Date(session_start)) |> 
   select(site_id, date, mean_temp,day_time) |> 
-  left_join(df_sites_positions, by = "site_id") |> 
+  left_join(df_sites_positions_corr, by = "site_id") |> 
   rename(daily_temp = "mean_temp")
 
 ###### 2.1.2 Table exploration ########
@@ -387,4 +399,5 @@ if(F){
     theme_bw() +
     labs(x = "Mean temperature rank", y = "Mean temperature", color = "Site")
 }
+
 
