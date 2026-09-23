@@ -421,6 +421,37 @@ idw_point <- function(distances, data_values, beta = -2){
   as.vector((weights %*% data_values) / rowSums(weights))
 }
 
+# Temperature interpolation of missing site function
+interpolate_missing_sites = function(data, sites_infos, dist_matrix,  min_sites = 30) {
+  df_temp_interp <- data %>% 
+    group_by(date, day_time) %>% # for each day and time period
+    group_modify(~ {
+      subdata <- .x # give a name to the susampled dataframe
+      
+      missing <- sites_infos %>%  # recover the id and positing of the sites without temp data (i.e. not present in the dataframe)
+        filter(!site_id %in% subdata$site_id)
+      
+      if(nrow(missing) == 0 || nrow(subdata) < min_sites) return(tibble()) # check if there are missing sites or if there are enough observed sites
+      
+      distances <- dist_sites[ # subsample the matrices of distance to have only the distance between missing sites and non missing sites
+        as.character(missing$site_id),
+        as.character(subdata$site_id),
+        drop = FALSE
+      ]
+      
+      missing %>% # interpolate thanks to ibw function the temperature of the missing sites
+        mutate(
+          daily_temp = idw_point(distances = distances, data_values = subdata$daily_temp),
+          normalised_rank = NA_real_,
+          nb_sites_evaluated = nrow(subdata)
+        )
+      
+    }) %>% 
+    ungroup()
+  return(df_temp_interp)
+}
+
+
 
 
 #### 5. Out put ####
