@@ -10,7 +10,7 @@ require(ggplot2)
 require(tidyr)
 
 #source(here::here("programs","libraries.R"))
-source(here("functions/funct_spatial-iterpolation.R"))
+
 
 #### 0. Data importation ####
 
@@ -475,7 +475,6 @@ data_temp_daily_complete_min30_rk = func_rank_temporal_and_group(df = data_temp_
                              element_id = "site_id")
   
 
-
 # Graphs number of sites followed over time 
 if(F){
   data_temp_daily_complete_min30 |> 
@@ -507,4 +506,11 @@ data_daily_temp = df_temp_daily_mean_cl_rk
 data_monthly_temp = df_temp_monthly_mean_cl_rk
 data_daily_temp_interpolated = data_temp_daily_complete_min30_rk
 
-rm(df_temp, df_temp_session, df_sites_info, df_sites_positions,df_sites_positions_corr, df_temperature_all_raw, df_temp_daily_mean_cl_rk, df_temp_daily_mean_cl,df_temp_monthly_mean_cl, df_temp_monthly_mean_cl_rk)
+rm(df_temp, df_temp_session, df_sites_info, df_sites_positions,df_sites_positions_corr, df_temperature_all_raw, df_temp_daily_mean_cl_rk, df_temp_daily_mean_cl,df_temp_monthly_mean_cl, df_temp_monthly_mean_cl_rk, sites_sf, data_temp_daily_complete_min30, data_temp_daily_complete_min30_rk, df_session_summary, df_session_summary_cleared, df_interp_30, df_temp_monthly_data)
+rm(func_rank_temporal_and_group,idw_point,interpolate_missing_sites)
+rm(dist_sites)
+
+# filepath_daily = file.path(here("data/data_environment/"),"ibutton_daily_temperature_corr_and_interpolated.csv")
+# filepath_monthly = file.path(here("data/data_environment/"),"ibutton_monthly_temperatures_corr.csv")
+# write.csv2(data_monthly_temp, file = filepath_monthly)
+# write.csv2(data_daily_temp_interpolated, file = filepath_daily)
