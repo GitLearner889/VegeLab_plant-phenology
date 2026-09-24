@@ -207,10 +207,83 @@ data_sites_infos |>
   ggplot(aes(x = mean_mngt_class, y = mean_temperature_Night)) +
   geom_point()
 
+data_sites_infos |> 
+  ggplot(aes(x = site_lon, y = site_lat, color = mean_mngt_class, shape = potentiel_site, label = site_id )) +
+  geom_point(size = 3 ) +
+  geom_text_repel(aes(hjust = 0.5 , vjust = -0.8), colour = "black", size = 4) +
+  theme_bw()
+
+
+data_sites_infos |>
+  ggplot(aes(x = site_lon, y = site_lat)) +
+  
+  # Gestion en couleur des points
+  geom_point(aes(color = mean_temperature_Night,
+                 size = mean_mngt_class),
+             alpha = 0.9, stroke = 1.2) +
+  
+  # Labels conditionnels
+  geom_text_repel(
+    data = . %>% filter(potentiel_site == TRUE),
+    aes(label = paste(site_id)),
+    color = "red", size = 3.5, fontface = "bold"
+  ) +
+  geom_text_repel(
+    data = . %>% filter(potentiel_site == FALSE),
+    aes(label = site_id),
+    color = "grey40", size = 3
+  ) +
+  
+  scale_color_viridis_c(option = "plasma") +
+  scale_size(range = c(1, 5)) +
+  theme_minimal(base_size = 11) +
+  theme(legend.position = "bottom") +
+  coord_sf()
+
+##### Site ranking  ####
+func_rank_temporal_and_group <- function(df, 
+                                        var_use_to_rank = "monthly_temp", 
+                                        group_col = "day_time", 
+                                        temporal_id = "date", 
+                                        element_id = "site_id") {
+  df_rank = df %>%
+    # compute the rank for each group, for each temporal_id
+    group_by(!!sym(group_col), !!sym(temporal_id)) |> 
+    mutate(raw_rank = rank(!!sym(var_use_to_rank), ties.method = "average"),
+           nb_sites_evaluated = n(),
+           normalised_rank = (raw_rank - 1) / (nb_sites_evaluated - 1)) |> 
+    ungroup() |> 
+    dplyr::select(all_of(c(temporal_id, group_col,element_id,"normalised_rank", "nb_sites_evaluated")))
+  
+  new_df = df |> 
+    left_join(df_rank, by = c(group_col, temporal_id, element_id)) |> 
+    ungroup()
+  
+  return(new_df)
+}
+
+data_sites_infos |> 
+  mutate(rank_temperature_Night = rank(mean_temperature_Night),
+         rank_temperature_Day = rank(mean_temperature_Day),
+         rank_mngt_class = rank(mean_mngt_class)) |> 
+  select(site_id, starts_with("rank_"), potentiel_site) |> 
+  filter(potentiel_site)
+
+back_up_sites = c(61,81,46,88,89,44,24,49,105,11,10,95,70,103,30)
+
+data_sites_infos = data_sites_infos |> 
+  mutate(type_site = case_when(
+    potentiel_site ~  "prospected",
+    site_id %in% back_up_sites ~  "back_up",
+    T ~ "none"
+  ))
+
+
+
+
+
 # Create a dataframe with important variable to choose species
 
 data_selection = data_spe_distribution_2025 |>
   left_join(spe_management_indices |> select(spe_name, weighted_mean_mngt_intensity, weighted_sd_mngt_intensity), by = "spe_name") 
-
-
 
