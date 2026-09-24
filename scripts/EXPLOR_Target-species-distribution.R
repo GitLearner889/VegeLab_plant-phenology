@@ -162,27 +162,33 @@ data_temp_60sites_mean = data_temp_60sites |>
   summarise(mean_temperature = mean(daily_temp),
             mean_rank = mean(normalised_rank))
 
-data_temp_60sites_mean |> 
-  ggplot(aes(x = mean_rank, y = mean_temperature, color = as.factor(site_id))) +
-  geom_point() +
-  facet_wrap(~ day_time, scales = "free_y") +
-  theme_bw()
+if(F){
+  # Plot mean rank against mean temperature
+  data_temp_60sites_mean |> 
+    ggplot(aes(x = mean_rank, y = mean_temperature, color = as.factor(site_id))) +
+    geom_point() +
+    facet_wrap(~ day_time, scales = "free_y") +
+    theme_bw()
+  
+  # Plot mean night temperature against mean day one
+  data_temp_60sites_mean |> 
+    pivot_wider(id_cols = "site_id", 
+                values_from = c("mean_temperature","mean_rank"), 
+                names_from = "day_time") |> 
+    ggplot(aes(x = mean_temperature_Night, y = mean_temperature_Day, color = as.factor(site_id))) +
+    geom_point() +
+    theme_bw()
+  
+  # Plot mean night rank against mean day one
+  data_temp_60sites_mean |> 
+    pivot_wider(id_cols = "site_id", 
+                values_from = c("mean_temperature","mean_rank"), 
+                names_from = "day_time") |> 
+    ggplot(aes(x = mean_rank_Night, y = mean_rank_Day, color = as.factor(site_id))) +
+    geom_point() +
+    theme_bw()
+}
 
-data_temp_60sites_mean |> 
-  pivot_wider(id_cols = "site_id", 
-              values_from = c("mean_temperature","mean_rank"), 
-              names_from = "day_time") |> 
-  ggplot(aes(x = mean_temperature_Night, y = mean_temperature_Day, color = as.factor(site_id))) +
-  geom_point() +
-  theme_bw()
-
-data_temp_60sites_mean |> 
-  pivot_wider(id_cols = "site_id", 
-              values_from = c("mean_temperature","mean_rank"), 
-              names_from = "day_time") |> 
-  ggplot(aes(x = mean_rank_Night, y = mean_rank_Day, color = as.factor(site_id))) +
-  geom_point() +
-  theme_bw()
 
 # Create a dataframe with important variable to choose species
 
