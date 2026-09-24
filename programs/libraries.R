@@ -1,9 +1,12 @@
 library(here)
 # Data management
 library(dplyr)
+library(tidyr)
+require(data.table)
 library(readxl)
 library(stringr)
 library(lubridate)
-library(tidyr)
+require(photobiology)
+require(sf)
 # Graphs
 library(ggplot2)
