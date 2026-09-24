@@ -190,6 +190,23 @@ if(F){
 }
 
 
+##### Site recap #####
+
+data_sites_infos = data_temp_60sites |> 
+  distinct(site_id,site_lon,site_lat) |> 
+  left_join(data_mngt_quanti_per_site |> select(site_id, mean_mngt_class, sd_mngt_class), 
+            by = "site_id") |> 
+  left_join(data_temp_60sites_mean |> 
+              pivot_wider(id_cols = "site_id",
+                          values_from = c("mean_temperature", "mean_rank"),
+                          names_from = "day_time"),
+            by = "site_id") |> 
+  mutate(potentiel_site = ifelse(site_id %in% potential_sites_of_sampling$site_id, T, F))
+
+data_sites_infos |> 
+  ggplot(aes(x = mean_mngt_class, y = mean_temperature_Night)) +
+  geom_point()
+
 # Create a dataframe with important variable to choose species
 
 data_selection = data_spe_distribution_2025 |>
