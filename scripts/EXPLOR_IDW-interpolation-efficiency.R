@@ -11,5 +11,13 @@
  df_sites_positions = df_temp_all_cor |> 
    distinct(site_id, site_lon,site_lat)
  
+ # Matrice of distance computing 
+ sites_sf <- df_sites_positions %>% 
+   st_as_sf(coords = c("site_lon", "site_lat"), crs = 4326) %>% 
+   st_transform(2154) # adapted to calculate distance on small scales
+ 
+ dist_sites <- as.matrix(st_distance(sites_sf)) # compute distance and make it a matrix object
+ rownames(dist_sites) <- df_sites_positions_corr$site_id
+ colnames(dist_sites) <- df_sites_positions_corr$site_id
  
  
