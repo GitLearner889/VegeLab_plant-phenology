@@ -10,3 +10,4 @@ require(photobiology)
 require(sf)
 # Graphs
 library(ggplot2)
+library(ggrepel)
