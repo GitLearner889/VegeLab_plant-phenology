@@ -1,6 +1,6 @@
  source(here::here("programs/libraries.R"))
  
- #### Initialization ####
+ #### 1. Initialization ####
  ##### 1.1 Data importation ####
  df_temp_all_cor = read.csv2(here("data/data_environment/ibutton_daily_temperature_corr_and_interpolated.csv")) |> 
    dplyr::select(-X)
@@ -57,3 +57,14 @@
    return(df_temp_interp)
  }
  
+ #### 2. Exploration of efficiency ####
+ 
+ ##### 2.1 Cross test ####
+ 
+ df_temp_all_obs |> 
+   group_by(nb_sites_observed) |>
+   count() |> 
+   arrange(desc(nb_sites_observed)) |> 
+   print(n = 20)
+ 
+ df_temp_all_obs
