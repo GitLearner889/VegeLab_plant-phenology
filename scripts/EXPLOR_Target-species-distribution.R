@@ -48,11 +48,13 @@ list_target_species = tibble(spe_id = c(79908,127454,127439,94207,113893,106653)
   arrange(spe_name)
 
 # Dataframe of abundance for each species in each session
-data_trgtspe_session = data_sqr |> 
-  filter(spe_id %in% list_target_species$spe_id) |> 
+data_spe_session = data_sqr |> 
   group_by(session_id,site_id,year,spe_id,spe_name) |> 
   summarise(AB = n()) |> 
   ungroup()
+
+data_trgtspe_session = data_spe_session |> 
+  filter(spe_id %in% list_target_species$spe_id) 
 
 # Dataframe of abundance of species across all sites for each year
 data_trgtspe_distribution = data_trgtspe_session |> 
@@ -193,46 +195,116 @@ if(F){
 
 ##### 4.2 Temperature for each species #####
 
-sd_weighted <- function(x, w, na.rm = TRUE) {
-  if (na.rm) {
-    valide <- !(is.na(x) | is.na(w))
-    if (sum(valide) < 2) return(NA_real_)
-    x <- x[valide]
-    w <- w[valide]
-  }
+# Fancy but overkill function to compute a double weighted mean calculus 
+func_double_weight_mean <- function(data, cols_target = c(""), first_weight_str = "AB", second_weight_str = "nb_months") {
+  first_weight <- rlang::sym(first_weight_str)
+  second_weight <- rlang::sym(second_weight_str)
   
-  mu <- sum(w * x) / sum(w) # weighted mean
-  sqrt(sum(w * (x - mu)^2) / (sum(w) - 1))
+  data %>%
+    mutate(total_weight = !!first_weight * !!second_weight) %>% # compute total weight
+    pivot_longer(cols = all_of(cols_target),
+                 names_to = "variable",
+                 values_to = "valeur") %>%
+    filter(!is.na(valeur)) %>% # remove from calculation values that don't have data
+    group_by(spe_id, spe_name, variable) %>% # compute for each species and each site the weighted mean of each variable
+    summarise(
+      weighted_mean = round(weighted.mean(valeur, total_weight, na.rm = TRUE),2),
+      nb_sessions       = n(),
+      nb_mois_median   = median(!!second_weight),
+      nb_eff            = sum(total_weight)^2 / sum(total_weight^2),
+      sum_total_weight      = sum(total_weight),
+      .groups = "drop"
+    ) %>%
+    pivot_wider(names_from = variable, 
+                values_from = c(weighted_mean, nb_sessions, nb_eff))
 }
 
-# Compute temperature indice of each species weighted by its abundance
-data_trgtspe_session_mngt = data_trgtspe_session |> 
-  left_join(data_mngt_reduced |>  # Add gestion intensity for each session
-              dplyr::select(-site_id,-year), by = "session_id")
-
-trgtspe_management_indices =  data_trgtspe_session_mngt|> 
-  group_by(spe_id,spe_name) |> 
-  summarise(
-    weighted_mean_mngt_intensity = round(sum(gestion_classe_num * AB, na.rm = T) / sum(AB),2),
-    weighted_sd_mngt_intensity = round(sd_weighted(x = gestion_classe_num, w = AB, na.rm = T),3),
-    mean_mngt_intensity = round(mean(gestion_classe_num, na.rm = T),2),
-    sd_mngt_intensity = round(sd(gestion_classe_num, na.rm = T),3),
-    min_mngt_intensity = min(gestion_classe_num, na.rm = T),
-    max_mngt_intensity = max(gestion_classe_num, na.rm = T),
-    tot_session = n_distinct(session_id),
-    tot_site = n_distinct(site_id),
-    tot_ab = sum(AB),
-    tot_mngt_class = n_distinct(gestion_classe_num)) |> 
+# Compute mean annual temperature per site 
+data_temp_60sites_yearly_avrg =  data_temp_60sites |>
+  mutate(year = year(date),
+         month = month(date)) |> 
+  group_by(site_id,year,day_time) |> 
+  summarise(yearly_mean_temp = mean(daily_temp, na.rm = T),
+            yearly_mean_rank = mean(normalised_rank, na.rm = T),
+            nb_months = n_distinct(month)) |> 
+  pivot_wider(id_cols = c("site_id","year", "nb_months"),
+              names_from = "day_time",
+              values_from = c("yearly_mean_temp", "yearly_mean_rank")) |> 
+  mutate(session_id = paste(site_id,year, sep = "_")) |> 
   ungroup()
 
+###### 4.2.1 Targets species ####
+
+# Compute temperature indice of each species weighted by its abundance
+data_trgtspe_session_temp = data_trgtspe_session |> 
+  left_join(data_temp_60sites_yearly_avrg |>  # Add gestion intensity for each session
+              dplyr::select(-site_id,-year) |> 
+              filter(session_id %in% data_trgtspe_session$session_id), by = "session_id") |> 
+  mutate(nb_months = ifelse(is.na(nb_months), 0, nb_months))
+
+
+
+# Result of fancy function 
+if(F){
+  func_double_weight_mean(data = data_trgtspe_session_temp, 
+                          cols_target =  c("yearly_mean_temp_Day", "yearly_mean_temp_Night"),
+                          first_weight_str = "AB",
+                          second_weight_str = "nb_months") |> 
+    View()
+}
+
+
+trgtspe_temp_indices =  data_trgtspe_session_temp|> 
+  group_by(spe_id,spe_name) |> 
+  summarise(
+    weighted_mean_night_temp = round(sum(yearly_mean_temp_Night * AB*nb_months, na.rm = T) / sum(AB*nb_months),2),
+    weighted_mean_day_temp = round(sum(yearly_mean_temp_Day * AB*nb_months, na.rm = T) / sum(AB*nb_months),2),
+    weighted_mean_night_rank = round(sum(yearly_mean_rank_Night * AB*nb_months, na.rm = T) / sum(AB*nb_months),2),
+    weighted_mean_day_rank = round(sum(yearly_mean_rank_Day * AB*nb_months, na.rm = T) / sum(AB*nb_months),2),
+    nb_session = n()
+    ) |> 
+  ungroup()
+
+###### 4.2.2 All species ######
+if(F){
+  data_spe_session_temp = data_spe_session |> 
+    left_join(data_temp_60sites_yearly_avrg |>  # Add gestion intensity for each session
+                dplyr::select(-site_id,-year) |> 
+                filter(session_id %in% data_trgtspe_session$session_id), by = "session_id") |> 
+    mutate(nb_months = ifelse(is.na(nb_months), 0, nb_months)) |> 
+    mutate(target_spe = ifelse(spe_id %in% list_target_species$spe_id, T, F))
+  
+  spe_temp_indices =  data_spe_session_temp |> 
+    group_by(spe_id,spe_name, target_spe) |> 
+    summarise(
+      weighted_mean_night_temp = round(sum(yearly_mean_temp_Night * AB*nb_months, na.rm = T) / sum(AB*nb_months),2),
+      weighted_mean_day_temp = round(sum(yearly_mean_temp_Day * AB*nb_months, na.rm = T) / sum(AB*nb_months),2),
+      weighted_mean_night_rank = round(sum(yearly_mean_rank_Night * AB*nb_months, na.rm = T) / sum(AB*nb_months),2),
+      weighted_mean_day_rank = round(sum(yearly_mean_rank_Day * AB*nb_months, na.rm = T) / sum(AB*nb_months),2),
+      nb_session = n()
+    ) |> 
+    ungroup()
+  
+  spe_temp_indices |> 
+    filter(nb_session > 30) |> 
+    ggplot(aes(x = nb_session, y = weighted_mean_night_temp, label = spe_name, color = target_spe)) +
+    geom_text_repel() +
+    geom_point() +
+    theme_bw() +
+    theme(legend.position = "none") +
+    labs(x = "Number of sessions where the species is found" , y = "Mean night temperature of the species" )
+}
+
+# Global comparison with all species
+if(F){
+  trgtspe_temp_indices
+}
+
 #### 5. Recap of all infos ####
-##### 5.1 Site recap #####
-data_temp_60sites_yearly_avrg =  data_temp_60sites |>
-  group_by(site_id,year) |> 
-  summarise(yearly_mean_night_temp = mean(daily_temp),
-            yearly_mean_day_temp = mean(daily_temp),
-            yearly_mean_night_rank = mean(normalised_rank),
-            yearly_mean_day_rank = mean(normalised_rank))
+
+# 
+
+##### 5.2 Site recap #####
 
 data_sites_infos = data_temp_60sites |> 
   distinct(site_id,site_lon,site_lat) |> 
