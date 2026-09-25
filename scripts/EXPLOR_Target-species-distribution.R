@@ -295,14 +295,30 @@ if(F){
     labs(x = "Number of sessions where the species is found" , y = "Mean night temperature of the species" )
 }
 
-# Global comparison with all species
-if(F){
-  trgtspe_temp_indices
-}
-
 #### 5. Recap of all infos ####
 
-# 
+##### 5.1 Target species recap #####
+trgtspe_complete_infos = trgtspe_temp_indices |> 
+  dplyr::select(spe_id,weighted_mean_night_temp,weighted_mean_day_temp) |> 
+  left_join(trgtspe_management_indices |> 
+              dplyr::select(spe_id, spe_name, weighted_mean_mngt_intensity, tot_session, tot_site,tot_ab),
+            by = "spe_id") |> 
+  rename(management_intensity = weighted_mean_mngt_intensity,
+         night_temp = weighted_mean_night_temp,
+         day_temp = weighted_mean_day_temp) |> 
+  relocate(spe_id, spe_name, management_intensity, night_temp, day_temp)
+
+
+#
+if(F){
+  trgtspe_complete_infos |> View()
+  
+  trgtspe_complete_infos |> 
+    ggplot(aes(x = management_intensity, y = night_temp, label = spe_name)) +
+    geom_point() +
+    geom_text_repel() +
+    theme_bw()
+}
 
 ##### 5.2 Site recap #####
 
