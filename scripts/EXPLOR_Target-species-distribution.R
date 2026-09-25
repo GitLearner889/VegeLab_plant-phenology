@@ -478,13 +478,100 @@ data_trgtspe_ab_2025 = data_trgtspe_session |>
     spe_name == "Lotus corniculatus" ~ "Lc",
     spe_name == "Achillea millefolium" ~ "Ac",
     T ~ NA
-  )) |> 
-  
-# Create a dataframe with important variable to choose species
+  ))
 
-data_selection = data_spe_distribution_2025 |>
-  left_join(spe_management_indices |> select(spe_name, weighted_mean_mngt_intensity, weighted_sd_mngt_intensity), by = "spe_name") 
-
+library(leaflet)
 
 data_sites_infos_final |> 
-  write.csv2(file = paste(here("data/"), "sites_detailed_infos_mng_temp_trgtspe.csv"))
+  left_join(data_sites_infos |>  dplyr::select(site_id, site_lon, site_lat)) |> 
+  ggplot(aes(x = site_lon, y = site_lat, label = site_id, color = type_site)) +
+  geom_point() +
+  geom_text_repel() +
+  theme_bw() +
+  theme(legend.position = "none")
+
+
+  
+library(tidyverse)
+library(sf)
+library(ggspatial)      # Pour annotation_map_tile()
+library(ggrepel)        # Pour geom_text_repel()
+
+# 1. Préparer les données
+data_plot <- data_sites_infos_final |> 
+  left_join(data_sites_infos |> 
+              dplyr::select(site_id, site_lon, site_lat)) 
+
+# 2. Convertir en SF et transformer en projection appropriée pour la distance/zone
+# La projection EPSG:3857 (Web Mercator) est requise pour afficher les tuiles OSM
+site_sf <- data_plot |> 
+  st_as_sf(coords = c("site_lon", "site_lat"), crs = 4326) |>   # GPS initial
+  st_transform(crs = 3857)                                   # Projeté pour OSM
+library(ggspatial)  
+# 3. Tracer avec fond OpenStreetMap
+ggplot(site_sf) +
+  annotation_map_tile(type = "osm",              # "osm" pour OpenStreetMap
+                      zoom = 10,                 # Ajuste selon ta zone (5-15)
+                      color = NULL,              # Tuile grise par défaut (évite d'écraser tes couleurs)
+                      alpha = 0.5) +             # Transparence pour lisibilité
+  geom_point(aes(x = geometry, y = NULL,         # Ou simplement aes(geometry = geometry) dans ggplot SF
+                 color = type_site),             # Si tes données sont déjà dans le bon CRS
+             size = 3) +
+  geom_text_repel(aes(label = site_id),
+                  size = 3,
+                  max.overlaps = 10) +
+  labs(title = "Localisation des sites",
+       subtitle = "Fond de carte OpenStreetMap") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "right",
+        panel.grid = element_blank())
+  
+  
+
+library(ggspatial)
+library(ggrepel)
+
+ggplot(site_sf) +
+  annotation_map_tile(type = "osm",   # Fond OpenStreetMap
+                      zoom = 10,
+                      alpha = 0.5) +  # Transparence pour la lisibilité
+  
+  # ⚠️ Avec un objet sf, utiliser geom_sf() plutôt que geom_point()
+  geom_sf(aes(color = type_site), size = 3) +
+  
+  # ⚠️ geom_text_repel() ne comprend pas nativement la géométrie sf :
+  # il faut passer par stat = "sf_coordinates" et after_stat()
+  geom_text_repel(
+    stat = "sf_coordinates",
+    aes(label = site_id, geometry = geometry),
+    size = 3,
+    max.overlaps = 10
+  ) +
+  
+  labs(title = "Localisation des sites",
+       subtitle = "Fond de carte OpenStreetMap") +
+  theme_minimal(base_size = 12) +
+  theme(legend.position = "right",
+        panel.grid = element_blank())
+
+
+
+# data_sites_infos_final |> 
+#   write.csv2(file = paste(here("data/"), "sites_detailed_infos_mng_temp_trgtspe.csv"))
+
+
+# Charger tuiles OSM
+tiles <- osmdata::getbb(c(xmin = min(site_sf$geometry[[1]][1]) - 0.02,
+                          ymin = min(site_sf$geometry[[1]][2]) - 0.02,
+                          xmax = max(site_sf$geometry[[1]][1]) + 0.02,
+                          ymax = max(site_sf$geometry[[1]][2]) + 0.02))
+osm_data <- osmdata::opq(bbox = tiles) |>
+  osmdata::add_osm_feature(key = "landuse") |>
+  osmdata::osmdata_sf()
+
+ggplot(osm_data$osm_polygons) +
+  geom_sf(fill = "lightgray", color = NA, alpha = 0.8) +
+  geom_sf(data = site_sf, aes(color = type_site), size = 3) +
+  ... # Ajoute tes textes et thèmes ici
+
+
