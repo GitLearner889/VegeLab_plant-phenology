@@ -322,6 +322,7 @@ if(F){
 
 ##### 5.2 Site recap #####
 
+###### 5.2.1 Display of sites ####
 back_up_sites = c(61,81,46,88,89,44,24,49,105,11,10,95,70,103,30)
 
 data_sites_infos = data_temp_60sites |> 
@@ -367,8 +368,15 @@ data_sites_infos |>
   theme_minimal(base_size = 11) +
   theme(legend.position = "bottom") +
   coord_sf()
+# more elaborated map
+data_sites_infos |> 
+  ggplot(aes(x = site_lon, y = site_lat, label = site_id, color = type_site)) +
+  geom_point() +
+  geom_text_repel() +
+  theme_bw() +
+  theme(legend.position = "none")
 
-###### 5.2.1 Site ranking  ####
+###### 5.2.2 Site ranking  ####
 sites_raking = data_sites_infos |> 
   mutate(rank_temperature_Night = rank(mean_temperature_Night),
          rank_temperature_Day = rank(mean_temperature_Day),
@@ -376,7 +384,7 @@ sites_raking = data_sites_infos |>
   select(site_id, starts_with("rank_"), type_site)
 
 
-#### 5.2.2 Add flora information ####
+#### 5.2.3 Add flora information ####
 
 data_trgtspe_ab_2025 = data_trgtspe_session |> 
   filter(year == 2025) |> 
@@ -429,7 +437,7 @@ data_sites_infos_final = data_sites_infos_final |>
          mngt_night_class = ifelse(mean_mngt_class < 4, "NF", "F"),
          class = paste(temp_night_class,mngt_night_class,sep = "/")) 
 
-###### 5.2.3 Contengency table of site propeerties and species presence #######
+###### 5.2.4 Contengency table of site propeerties and species presence #######
 
 # long transformation 
 sites_species_long <- data_sites_infos_final |> 
@@ -454,16 +462,4 @@ species_matrix <- species_by_class |>
               values_from = site_ids, 
               values_fill = "-")  # affiche "-" si aucun site
 
-# Afficher
 print(species_matrix)
-
-
-library(leaflet)
-
-data_sites_infos_final |> 
-  left_join(data_sites_infos |>  dplyr::select(site_id, site_lon, site_lat)) |> 
-  ggplot(aes(x = site_lon, y = site_lat, label = site_id, color = type_site)) +
-  geom_point() +
-  geom_text_repel() +
-  theme_bw() +
-  theme(legend.position = "none")
