@@ -220,5 +220,58 @@ list_selected_species |>
 
 
 #### 4. Temperature data ####
+data_temp = read.csv2(file = here("data/data_environment/ibutton_daily_temperature_corr_and_interpolated.csv"))
+
+data_temp_60sites = data_temp |> 
+  filter(nb_sites_evaluated == 60 )
+
+##### 4.1 Temperature for each site ####
+data_temp_60sites_mean = data_temp_60sites |> 
+  group_by(site_id,day_time) |> 
+  summarise(mean_temperature = mean(daily_temp),
+            mean_rank = mean(normalised_rank))
+
+
+data_temp_60sites_yearly_avrg =  data_temp_60sites |>
+  mutate(year = year(date),
+         month = month(date)) |> 
+  group_by(site_id,year,day_time) |> 
+  summarise(yearly_mean_temp = mean(daily_temp, na.rm = T),
+            yearly_mean_rank = mean(normalised_rank, na.rm = T),
+            nb_months = n_distinct(month)) |> 
+  pivot_wider(id_cols = c("site_id","year", "nb_months"),
+              names_from = "day_time",
+              values_from = c("yearly_mean_temp", "yearly_mean_rank")) |> 
+  mutate(session_id = paste(site_id,year, sep = "_")) |> 
+  ungroup()
+
+
+data_spe_session_temp = data_spe_session |> 
+  left_join(data_temp_60sites_yearly_avrg |>  # Add gestion intensity for each session
+              dplyr::select(-site_id,-year) |> 
+              filter(session_id %in% data_spe_session$session_id), by = "session_id") |> 
+  mutate(nb_months = ifelse(is.na(nb_months), 0, nb_months))
+
+spe_temp_indices =  data_spe_session_temp|> 
+  group_by(spe_id,spe_name) |> 
+  summarise(
+    weighted_mean_night_temp = round(sum(yearly_mean_temp_Night * AB*nb_months, na.rm = T) / sum(AB*nb_months),2),
+    weighted_mean_day_temp = round(sum(yearly_mean_temp_Day * AB*nb_months, na.rm = T) / sum(AB*nb_months),2),
+    weighted_mean_night_rank = round(sum(yearly_mean_rank_Night * AB*nb_months, na.rm = T) / sum(AB*nb_months),2),
+    weighted_mean_day_rank = round(sum(yearly_mean_rank_Day * AB*nb_months, na.rm = T) / sum(AB*nb_months),2),
+    nb_session = n()
+  ) |> 
+  ungroup()
+
+#### 5. Final dataset with temp and gestion data for all species ####
+
+spe_management_indices |> 
+  dplyr::select(spe_id,spe_name,weighted_mean_mngt_intensity,tot_session, tot_site,tot_ab) |> 
+  left_join(spe_temp_indices |> dplyr::select(spe_id, weighted_mean_night_temp, nb_session), by = "spe_id") |> 
+  filter(nb_session > 30) |> 
+  ggplot(aes(x = weighted_mean_mngt_intensity, y = weighted_mean_night_temp, label = spe_name, size = nb_session)) +
+  geom_point() +
+  geom_text_repel(size = 4) +
+  theme_bw()
 
 
