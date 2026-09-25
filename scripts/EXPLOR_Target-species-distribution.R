@@ -431,6 +431,31 @@ data_sites_infos_final = data_sites_infos_final |>
 
 ###### 5.2.3 Contengency table of site propeerties and species presence #######
 
+# long transformation 
+sites_species_long <- data_sites_infos_final |> 
+  filter(type_site != "none") |> 
+  select(site_id, class, starts_with("ab_")) |> 
+  pivot_longer(cols = starts_with("ab_"), names_to = "species", values_to = "abundance") |> 
+  mutate(species = str_remove(species, "^ab_"),  # remove prefix "ab_"
+         present = abundance > 0 & !is.na(abundance))
+
+# Filter sites and group  them according to species presence and class of management/temperature
+species_by_class <- sites_species_long |> 
+  filter(present) |> 
+  group_by(species, class) |> 
+  summarise(site_ids = paste(sort(site_id), collapse = ", "),
+            n_sites = n(), 
+            .groups = "drop")
+
+# Wide transformation : creation of contengency table 
+species_matrix <- species_by_class |> 
+  pivot_wider(id_cols = species, 
+              names_from = class, 
+              values_from = site_ids, 
+              values_fill = "-")  # affiche "-" si aucun site
+
+# Afficher
+print(species_matrix)
 
 
 library(leaflet)
