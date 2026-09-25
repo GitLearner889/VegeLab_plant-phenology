@@ -61,10 +61,11 @@ data_trgtspe_distribution = data_trgtspe_session |>
             AB_Tot = sum(AB)) |> 
   ungroup()
 
+
 #### 2. Site data manipulation  ####
 
 ##### 2.1 Pre-selected sites ####
-# Sites that should be explored in late september
+# Sites that should be explored in late September
 potential_sites_of_sampling = data.frame(site_id = c(74, 27, 75, 23, 92, 58, 96, 55, 45, 72)) |> 
   arrange(site_id)
 
@@ -157,6 +158,7 @@ data_temp = read.csv2(file = here("data/data_environment/ibutton_daily_temperatu
 data_temp_60sites = data_temp |> 
   filter(nb_sites_evaluated == 60 )
 
+##### 4.1 Temperature for each site ####
 data_temp_60sites_mean = data_temp_60sites |> 
   group_by(site_id,day_time) |> 
   summarise(mean_temperature = mean(daily_temp),
@@ -189,8 +191,48 @@ if(F){
     theme_bw()
 }
 
+##### 4.2 Temperature for each species #####
 
-##### Site recap #####
+sd_weighted <- function(x, w, na.rm = TRUE) {
+  if (na.rm) {
+    valide <- !(is.na(x) | is.na(w))
+    if (sum(valide) < 2) return(NA_real_)
+    x <- x[valide]
+    w <- w[valide]
+  }
+  
+  mu <- sum(w * x) / sum(w) # weighted mean
+  sqrt(sum(w * (x - mu)^2) / (sum(w) - 1))
+}
+
+# Compute temperature indice of each species weighted by its abundance
+data_trgtspe_session_mngt = data_trgtspe_session |> 
+  left_join(data_mngt_reduced |>  # Add gestion intensity for each session
+              dplyr::select(-site_id,-year), by = "session_id")
+
+trgtspe_management_indices =  data_trgtspe_session_mngt|> 
+  group_by(spe_id,spe_name) |> 
+  summarise(
+    weighted_mean_mngt_intensity = round(sum(gestion_classe_num * AB, na.rm = T) / sum(AB),2),
+    weighted_sd_mngt_intensity = round(sd_weighted(x = gestion_classe_num, w = AB, na.rm = T),3),
+    mean_mngt_intensity = round(mean(gestion_classe_num, na.rm = T),2),
+    sd_mngt_intensity = round(sd(gestion_classe_num, na.rm = T),3),
+    min_mngt_intensity = min(gestion_classe_num, na.rm = T),
+    max_mngt_intensity = max(gestion_classe_num, na.rm = T),
+    tot_session = n_distinct(session_id),
+    tot_site = n_distinct(site_id),
+    tot_ab = sum(AB),
+    tot_mngt_class = n_distinct(gestion_classe_num)) |> 
+  ungroup()
+
+#### 5. Recap of all infos ####
+##### 5.1 Site recap #####
+data_temp_60sites_yearly_avrg =  data_temp_60sites |>
+  group_by(site_id,year) |> 
+  summarise(yearly_mean_night_temp = mean(daily_temp),
+            yearly_mean_day_temp = mean(daily_temp),
+            yearly_mean_night_rank = mean(normalised_rank),
+            yearly_mean_day_rank = mean(normalised_rank))
 
 data_sites_infos = data_temp_60sites |> 
   distinct(site_id,site_lon,site_lat) |> 
@@ -279,11 +321,82 @@ data_sites_infos = data_sites_infos |>
   ))
 
 
+#### Add flora information ####
+
+data_trgtspe_ab_2025 = data_trgtspe_session |> 
+  filter(year == 2025) |> 
+  select(-session_id, -year) |> 
+  arrange(spe_name) |> 
+  mutate(spe_name = case_when(
+    spe_name == "Plantago lanceolata" ~ "Pl",
+    spe_name == "Trifolium repens" ~ "Tr",
+    spe_name == "Trifolium pratense" ~ "Tp",
+    spe_name == "Dactylis glomerata" ~ "Dg",
+    spe_name == "Lotus corniculatus" ~ "Lc",
+    spe_name == "Achillea millefolium" ~ "Ac",
+    T ~ NA
+  )) |> 
+  group_by(site_id) |> 
+  mutate(nb_trgtspe = n())  |> 
+  ungroup() |> 
+  pivot_wider(id_cols = c("site_id", "nb_trgtspe"), 
+              values_from = AB, 
+              names_from = spe_name, 
+              names_prefix = "ab_", 
+              values_fill = 0)
+
+data_sites_infos_final = data_sites_infos |>
+  dplyr::select(-site_lon, -site_lat,-sd_mngt_class, -mean_rank_Day, -mean_rank_Night,-potentiel_site) |> 
+  mutate(mean_temperature_Day = round(mean_temperature_Day,2),
+         mean_temperature_Night = round(mean_temperature_Night,2),
+         mean_mngt_class = round(mean_mngt_class,1)) |> 
+  left_join(data_trgtspe_ab_2025, by = "site_id") |> 
+  relocate(site_id, type_site)
 
 
+data_sites_infos_final |> 
+  filter(type_site != "none") |> 
+  ggplot(aes(x = mean_mngt_class, y = mean_temperature_Night, label = site_id, colour = type_site, size = nb_trgtspe)) +
+  geom_point() +
+  geom_text_repel(fontface = "bold", size = 5) +
+  theme_minimal() +
+  labs(x = "Intensité de gestion", y = "Température nocturne moyenne", colour = "Classe", size = "Escpèces\ncibles")
 
+data_sites_infos_final |> 
+  ggplot(aes(x = mean_mngt_class, y = mean_temperature_Night, label = site_id, colour = type_site, size = nb_trgtspe)) +
+  geom_point() +
+  geom_text_repel(fontface = "bold",size = 5) +
+  theme_minimal() +
+  labs(x = "Intensité de gestion", y = "Température nocturne moyenne", colour = "Classe",size = "Escpèces\ncibles")
+
+data_sites_infos_final = data_sites_infos_final |> 
+  mutate(temp_night_class = ifelse(mean_temperature_Night < 12, "Fr", "Ch"),
+         mngt_night_class = ifelse(mean_mngt_class < 4, "NF", "F"),
+         class = paste(temp_night_class,mngt_night_class,sep = "/")) 
+data_sites_infos_final |> 
+  filter(type_site != "none")
+  
+
+  
+data_trgtspe_ab_2025 = data_trgtspe_session |> 
+  filter(year == 2025) |> 
+  select(-session_id, -year) |> 
+  arrange(spe_name) |> 
+  mutate(spe_name = case_when(
+    spe_name == "Plantago lanceolata" ~ "Pl",
+    spe_name == "Trifolium repens" ~ "Tr",
+    spe_name == "Trifolium pratense" ~ "Tp",
+    spe_name == "Dactylis glomerata" ~ "Dg",
+    spe_name == "Lotus corniculatus" ~ "Lc",
+    spe_name == "Achillea millefolium" ~ "Ac",
+    T ~ NA
+  )) |> 
+  
 # Create a dataframe with important variable to choose species
 
 data_selection = data_spe_distribution_2025 |>
   left_join(spe_management_indices |> select(spe_name, weighted_mean_mngt_intensity, weighted_sd_mngt_intensity), by = "spe_name") 
 
+
+data_sites_infos_final |> 
+  write.csv2(file = paste(here("data/"), "sites_detailed_infos_mng_temp_trgtspe.csv"))
